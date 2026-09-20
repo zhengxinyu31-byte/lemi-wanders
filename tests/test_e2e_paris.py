@@ -49,9 +49,11 @@ def test_built_payload_has_playable_board(tmp_path):
 
 
 def test_dist_has_both_mode_pages():
-    import os
-    assert os.path.isfile("dist/index.html")
-    assert os.path.isfile("dist/codex.html")
+    # 自己触发构建,不依赖前一个用例先跑过(CI 全新 checkout 会踩顺序耦合);
+    # 并统一用 ROOT 锚定路径,换 cwd 也不受影响。
+    main(offline=True)
+    assert os.path.isfile(os.path.join(ROOT, "dist", "index.html"))
+    assert os.path.isfile(os.path.join(ROOT, "dist", "codex.html"))
     for mod in ("core/storage.js", "core/mapkit.js", "game/game.js",
                 "codex/codex.js"):
-        assert os.path.isfile(os.path.join("dist", "assets", mod)), mod
+        assert os.path.isfile(os.path.join(ROOT, "dist", "assets", mod)), mod
