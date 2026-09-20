@@ -1,9 +1,8 @@
 /* Game mode. Mobile-first: the phone layout is the default, the desktop
    split is the override. Two of the three target scenarios are phones. */
 
-/* Spec-exact animation timings (tokens defined in base.css):
-   press 100ms, dice roll 400ms, walk 1000ms, card-out 150ms,
-   develop 350ms, card-set 100ms, info 3000ms; reduced-motion 200ms. */
+/* Animation timings are single-sourced as --t-* tokens in base.css and
+   referenced here via var(); reduced-motion degrades everything to a fade. */
 
 #game {
   display: flex;

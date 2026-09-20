@@ -36,7 +36,19 @@ def test_game_css_honours_reduced_motion():
 
 
 def test_animation_durations_match_the_spec():
-    css = open(os.path.join(WEB, "assets", "styles", "game.css"),
-               encoding="utf-8").read()
-    for ms in ("100ms", "400ms", "150ms", "350ms"):
-        assert ms in css, f"spec timing {ms} missing from game.css"
+    """时长的真实来源是 base.css 的 token,game.css 通过 var() 引用。"""
+    base = open(os.path.join(WEB, "assets", "styles", "base.css"),
+                encoding="utf-8").read()
+    # 逐条断言 token 定义,改动任一数值都会让测试变红
+    for token, ms in (("--t-press", "100ms"), ("--t-dice", "400ms"),
+                      ("--t-walk", "1000ms"), ("--t-card-out", "150ms"),
+                      ("--t-card-develop", "350ms"), ("--t-card-set", "100ms"),
+                      ("--t-info", "3000ms")):
+        assert f"{token}: {ms}" in base, f"{token} must be {ms}"
+
+    game = open(os.path.join(WEB, "assets", "styles", "game.css"),
+                encoding="utf-8").read()
+    # game.css 必须真的引用这些 token,而不是写死或漏用
+    for token in ("--t-press", "--t-dice", "--t-walk", "--t-card-out",
+                  "--t-card-develop"):
+        assert f"var({token})" in game, f"game.css must use var({token})"
