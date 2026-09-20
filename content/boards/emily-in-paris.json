@@ -1,0 +1,16 @@
+{
+  "storyline_id": "emily-in-paris",
+  "total_filler": 13,
+  "night_from_index": 13,
+  "filler_plan": ["street", "chance", "photo", "street", "easter", "street",
+                  "chance", "photo", "street", "easter", "chance", "street",
+                  "easter"],
+  "content_map": {
+    "street": ["paris-bonjour", "paris-metro-doors", "paris-cafe-pricing",
+               "paris-haussmann", "paris-wallace-fountain"],
+    "chance": ["paris-eiffel-petition", "paris-pantheon-pendulum",
+               "paris-garnier-phantom"],
+    "easter": ["paris-sr-petition", "paris-sr-existentialism",
+               "paris-sr-tourist-gaze"]
+  }
+}

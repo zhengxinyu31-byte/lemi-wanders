@@ -1,0 +1,17 @@
+{
+  "id": "paris-palais-garnier-r",
+  "rarity": "R",
+  "storyline_id": "emily-in-paris",
+  "poi_id": "palais-garnier",
+  "title_zh": "加尼叶歌剧院",
+  "title_en": "Palais Garnier",
+  "body_zh": "加斯东·勒鲁的小说《歌剧魅影》即以此歌剧院为背景,地下湖、包厢 No.5 都是小说元素;夏加尔为其绘制了穹顶壁画。1875 年落成,建筑师夏尔·加尼叶设计,是拿破仑三世第二帝国建筑风格的代表。",
+  "body_en": "Gaston Leroux's The Phantom of the Opera is set in this very house — the underground lake and Box No.5 are drawn from it; Chagall painted the ceiling fresco. Completed in 1875 to a design by Charles Garnier, it exemplifies the Second Empire style.",
+  "quote": {
+    "text_zh": "歌剧院的幽灵确曾存在。",
+    "text_original": "Le fantôme de l'Opéra a existé.",
+    "source": "加斯东·勒鲁《歌剧魅影》序言开篇第一句,Pierre Lafitte,1910",
+    "source_url": "https://www.livredepoche.com/livre/le-fantome-de-lopera-9782253009504/",
+    "verified": true
+  }
+}

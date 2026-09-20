@@ -1,0 +1,10 @@
+{
+  "id": "paris-eiffel-petition",
+  "question_zh": "1887 年反对建造埃菲尔铁塔的联名抗议书,有多少位艺术家签名?",
+  "question_en": "How many artists signed the 1887 protest against the Eiffel Tower?",
+  "options_zh": ["7 位", "47 位", "300 位"],
+  "options_en": ["7", "47", "300"],
+  "answer_index": 1,
+  "explain_zh": "47 位。签名者包括莫泊桑、小仲马,还有加尼叶歌剧院的建筑师夏尔·加尼叶。",
+  "explain_en": "Forty-seven — among them Maupassant, Dumas fils, and Charles Garnier, architect of the opera house."
+}

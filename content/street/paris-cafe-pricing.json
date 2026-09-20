@@ -1,0 +1,12 @@
+{
+  "id": "paris-cafe-pricing",
+  "category": "rule",
+  "text_zh": "在巴黎的咖啡馆,同一杯咖啡的价格看你在哪儿喝:站在吧台(au comptoir)通常最便宜,坐店内(en salle)贵一点,坐露台(en terrasse)最贵。这不是宰客——价目表按法规必须公示,不同区域标不同价是合法惯例,不会额外加\"服务费\"到账单上。",
+  "text_en": "At a Paris café, the same coffee costs differently depending on where you have it: cheapest standing at the bar (au comptoir), more sitting inside (en salle), most on the terrace (en terrasse). It's not a scam — prices must be posted by law, and charging different rates by area is a legitimate practice, with no separate \"service\" line added to your bill.",
+  "near_poi_id": "cafe-de-flore",
+  "sources": [
+    "https://inlovewithfrance.com/8321/the-love-france-guide-%E2%84%96-005-cafe-bistro-etiquette/",
+    "https://frenchtoenglish.com/french-cafe-culture-rules-etiquette/"
+  ],
+  "verified": true
+}

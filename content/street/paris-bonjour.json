@@ -1,0 +1,12 @@
+{
+  "id": "paris-bonjour",
+  "category": "etiquette",
+  "text_zh": "在巴黎,进店、进咖啡馆、上出租车前,先对店员说一声\"Bonjour\"(天黑后说\"Bonsoir\")是基本礼貌,离开说\"Au revoir\"。不打招呼就直接开口问东西,常被当成没礼貌,对方态度可能明显变冷。加一句\"s'il vous plaît\"(请)更稳妥。",
+  "text_en": "In Paris, greet the staff with \"Bonjour\" (\"Bonsoir\" after dark) before you ask for anything in a shop, café, or taxi, and say \"Au revoir\" when leaving. Launching straight into a request without a greeting often reads as rude, and service may noticeably cool. Adding \"s'il vous plaît\" (please) helps.",
+  "near_poi_id": "place-estrapade",
+  "sources": [
+    "https://www.afscv.org/blog/guide-to-french-etiquette/",
+    "https://www.afreno.org/post/the-most-important-word-in-french-is"
+  ],
+  "verified": true
+}

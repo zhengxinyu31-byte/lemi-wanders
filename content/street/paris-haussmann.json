@@ -1,0 +1,12 @@
+{
+  "id": "paris-haussmann",
+  "category": "trivia",
+  "text_zh": "巴黎大道两旁那种统一的米白色石砌六层楼房,多数是 1853-1870 年奥斯曼(Haussmann)改造留下的:当时规定沿新大道的建筑须用切割石材(多为本地的卢台西亚石灰岩),连楼高、阳台位置都有统一要求,才有了今天整齐划一的街景。",
+  "text_en": "Those uniform cream-colored six-story stone buildings lining Paris's boulevards mostly date from Haussmann's 1853-1870 overhaul: buildings along the new boulevards had to be built or faced in cut stone (usually local cream Lutetian limestone), with standardized heights and balcony placement — hence the harmonized streetscape you see today.",
+  "near_poi_id": "palais-garnier",
+  "sources": [
+    "https://en.wikipedia.org/wiki/Haussmann%27s_renovation_of_Paris",
+    "https://study.com/academy/lesson/georges-eugene-haussmann-s-urban-renewal-of-paris.html"
+  ],
+  "verified": true
+}

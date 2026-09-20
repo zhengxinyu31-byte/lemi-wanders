@@ -1,0 +1,12 @@
+{
+  "id": "paris-metro-doors",
+  "category": "transit",
+  "text_zh": "巴黎地铁部分较旧车厢(如 MF67、MF77 车型)的车门到站不会自动开——你得自己按按钮,或扳起门上那个小金属把手用点力才能打开。别傻等门自动开。较新车型(如 14 号线及 2025 年起陆续投入的 MF19)则是自动门。",
+  "text_en": "On many older Paris metro cars (e.g. MF67, MF77 stock), the doors don't open automatically at a stop — you press a button or lift a small metal latch (and pull firmly). Don't just wait for them to open. Newer trains (like Line 14 and the MF19 rolling out from 2025) have automatic doors.",
+  "near_poi_id": "pantheon",
+  "sources": [
+    "https://en.wikipedia.org/wiki/MF_77",
+    "https://www.urbansider.com/dos-and-donts-of-the-paris-metro/"
+  ],
+  "verified": true
+}

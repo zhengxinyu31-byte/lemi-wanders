@@ -1,0 +1,17 @@
+{
+  "id": "paris-tour-eiffel-r",
+  "rarity": "R",
+  "storyline_id": "emily-in-paris",
+  "poi_id": "tour-eiffel",
+  "title_zh": "埃菲尔铁塔",
+  "title_en": "Eiffel Tower",
+  "body_zh": "为 1889 年巴黎世博会而建,设计师古斯塔夫·埃菲尔。落成时曾遭巴黎文艺界联名反对——1887 年的抗议书有 47 位艺术家签名,莫泊桑是其中之一。如今它是法国最标志性的建筑。夜间整点有 5 分钟闪灯秀。",
+  "body_en": "Built for the 1889 World's Fair by Gustave Eiffel, it drew a petition of protest from the Paris art world — the 1887 letter carried 47 signatures, Maupassant's among them. Today it is France's most iconic structure. On the hour after dark it sparkles for five minutes.",
+  "quote": {
+    "text_zh": "我离开了巴黎,甚至离开了法国,只因为埃菲尔铁塔终究让我厌烦透顶。",
+    "text_original": "J'ai quitté Paris et même la France, parce que la tour Eiffel finissait par m'ennuyer trop.",
+    "source": "莫泊桑《漂泊的一生》首篇《Lassitude》开篇第一句,Ollendorff,1890",
+    "source_url": "https://fr.wikisource.org/wiki/La_Vie_errante_(Ollendorff,_1890)/Lassitude",
+    "verified": true
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "paris-jardin-palais-royal-r",
+  "rarity": "R",
+  "storyline_id": "emily-in-paris",
+  "poi_id": "jardin-palais-royal",
+  "title_zh": "皇家宫殿花园",
+  "title_en": "Jardin du Palais-Royal",
+  "body_zh": "花园里的布伦黑白条纹柱阵(Les Deux Plateaux)是巴黎最著名的当代艺术打卡点之一。作家科莱特长住于此;这里也是《午夜巴黎》《天使爱美丽》等多部电影钟爱的取景地。建于 17 世纪,曾是法国大革命的舆论策源地之一。",
+  "body_en": "Buren's black-and-white striped columns (Les Deux Plateaux) are one of Paris's most famous contemporary-art photo spots. The writer Colette lived here for years; it is also a beloved location for Midnight in Paris and Amélie. Built in the 17th century, it was a seedbed of Revolutionary opinion.",
+  "quote": {
+    "text_zh": "我们从未看得够,永远看得不够。",
+    "text_original": "Nous ne regardons, nous ne regarderons jamais assez.",
+    "source": "科莱特《我窗前的巴黎》(Paris de ma fenêtre),写于 1940-1944 年皇家宫殿寓所",
+    "source_url": "https://www.amisdecolette.fr/ressources/citations/",
+    "verified": true
+  }
+}

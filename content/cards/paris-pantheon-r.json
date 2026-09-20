@@ -1,0 +1,17 @@
+{
+  "id": "paris-pantheon-r",
+  "rarity": "R",
+  "storyline_id": "emily-in-paris",
+  "poi_id": "pantheon",
+  "title_zh": "先贤祠",
+  "title_en": "Panthéon",
+  "body_zh": "先贤祠安葬着伏尔泰、卢梭、雨果、左拉、居里夫人等法国伟人。原为路易十五还愿建造的圣女热纳维耶芙教堂,法国大革命后改为安葬伟人的世俗先贤祠。傅科摆最早在此进行地球自转实验。",
+  "body_en": "The Panthéon holds the tombs of Voltaire, Rousseau, Hugo, Zola and Marie Curie. Built as the church of Sainte-Geneviève on a vow of Louis XV, it became a secular mausoleum after the Revolution. Foucault first demonstrated the Earth's rotation with his pendulum here.",
+  "quote": {
+    "text_zh": "祖国感念伟人",
+    "text_original": "Aux grands hommes la patrie reconnaissante",
+    "source": "先贤祠正立面山花楣铭文,源自 1791 年制宪议会法令",
+    "source_url": "https://fr.wikipedia.org/wiki/Panth%C3%A9on_(Paris)",
+    "verified": true
+  }
+}

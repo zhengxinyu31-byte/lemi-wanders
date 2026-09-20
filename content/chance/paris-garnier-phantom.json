@@ -1,0 +1,10 @@
+{
+  "id": "paris-garnier-phantom",
+  "question_zh": "《歌剧魅影》里那个地下湖,在加尼叶歌剧院真的存在吗?",
+  "question_en": "Does the underground lake from The Phantom of the Opera really exist?",
+  "options_zh": ["纯属虚构", "确有一个地下蓄水池", "是排练厅的误传"],
+  "options_en": ["Pure fiction", "There is a real water tank below", "A rehearsal-hall mix-up"],
+  "answer_index": 1,
+  "explain_zh": "歌剧院地下确有一个蓄水池,建造时为处理地下水而设,至今仍在,消防队会在此训练。",
+  "explain_en": "There is a real cistern beneath the opera house, built to manage groundwater. It is still there, and the fire brigade trains in it."
+}

@@ -1,0 +1,10 @@
+{
+  "id": "paris-pantheon-pendulum",
+  "question_zh": "傅科在先贤祠用一个巨大的摆证明了什么?",
+  "question_en": "What did Foucault prove with a giant pendulum in the Panthéon?",
+  "options_zh": ["地球在自转", "月球引力存在", "空气有重量"],
+  "options_en": ["The Earth rotates", "Lunar gravity exists", "Air has weight"],
+  "answer_index": 0,
+  "explain_zh": "1851 年,傅科在此用摆的偏转首次直观证明了地球自转。",
+  "explain_en": "In 1851 Foucault used the pendulum's drift to demonstrate the Earth's rotation for the first time."
+}
