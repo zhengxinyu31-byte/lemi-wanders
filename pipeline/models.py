@@ -64,6 +64,7 @@ class POI:
     base_images: List[ImageRef] = field(default_factory=list)
     practical: Optional[Narrative] = None
     default_photo_spot: Optional[Narrative] = None
+    wiki_title: str = ""
 
 
 @dataclass

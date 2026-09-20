@@ -8,11 +8,21 @@
   "lng": 2.3319654,
   "address_zh": "歌剧院广场,75009",
   "address_en": "Place de l'Opéra, 75009",
-  "base_images": [],
+  "base_images": [
+    {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/dc/Paris_Opera_full_frontal_architecture%2C_May_2009.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=original",
+      "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/Paris_Opera_full_frontal_architecture%2C_May_2009.jpg/960px-Paris_Opera_full_frontal_architecture%2C_May_2009.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+      "author": "Wikimedia Commons",
+      "license": "See Commons file page",
+      "source_page": "https://en.wikipedia.org/wiki/Palais_Garnier",
+      "confidence": "high"
+    }
+  ],
   "practical": {
     "type": "practical",
     "text_zh": "付费参观约 15 欧,可看华丽内厅;也可购票观看演出。开放 10:00-17:00。地铁 Opéra(3/7/8号线)。",
     "text_en": "Paid visit around €15 to see the lavish interior; you can also buy tickets for a performance. Open 10:00-17:00. Metro: Opéra (L3/L7/L8).",
     "confidence": "high"
-  }
+  },
+  "wiki_title": "Palais Garnier"
 }

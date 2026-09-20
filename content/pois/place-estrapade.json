@@ -8,11 +8,21 @@
   "lng": 2.3448184,
   "address_zh": "埃斯特拉帕德广场,75005",
   "address_en": "Place de l'Estrapade, 75005",
-  "base_images": [],
+  "base_images": [
+    {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/cc/Place_de_l%27Estrapade_2.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=original",
+      "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cc/Place_de_l%27Estrapade_2.JPG/960px-Place_de_l%27Estrapade_2.JPG?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+      "author": "Wikimedia Commons",
+      "license": "See Commons file page",
+      "source_page": "https://en.wikipedia.org/wiki/Place_de_l'Estrapade",
+      "confidence": "high"
+    }
+  ],
   "practical": {
     "type": "practical",
     "text_zh": "免费开放的街头广场,随时可看。拍那扇绿门建议清晨人少时;请尊重居民,勿喧哗、勿进入楼内。最近地铁 Place Monge(7号线)。",
     "text_en": "A free, open street square viewable any time. For the famous green door, come early when it is quiet; please respect residents, keep the noise down and do not enter the building. Nearest metro: Place Monge (L7).",
     "confidence": "high"
-  }
+  },
+  "wiki_title": "Place de l'Estrapade"
 }

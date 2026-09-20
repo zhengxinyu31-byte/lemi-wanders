@@ -33,12 +33,15 @@ def enrich_images(pois, fetcher, used):
     for poi in pois.values():
         if poi.lat is None or poi.lng is None:
             continue
+        # Best: exact Wikipedia article title (curated main image, accurate).
+        titled = _try(lambda: fetcher.wiki_title_image(poi.wiki_title)) \
+            if poi.wiki_title else []
         geo = _try(lambda: fetcher.geosearch(poi.lat, poi.lng)) \
             or _try(lambda: fetcher.wiki_geosearch(poi.lat, poi.lng))
         name = poi.name_en or poi.name_zh
         named = _try(lambda: fetcher.name_search(name)) \
             or _try(lambda: fetcher.wiki_name_search(name))
-        chosen = pick_image([geo, named], used)
+        chosen = pick_image([titled, geo, named], used)
         poi.base_images = [chosen] if chosen else []
 
 

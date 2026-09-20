@@ -8,11 +8,21 @@
   "lng": 2.3377594,
   "address_zh": "皇家宫殿花园,75001",
   "address_en": "Jardin du Palais Royal, 75001",
-  "base_images": [],
+  "base_images": [
+    {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Colonnes_de_Buren.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=original",
+      "thumb": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/Colonnes_de_Buren.jpg/960px-Colonnes_de_Buren.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail",
+      "author": "Wikimedia Commons",
+      "license": "See Commons file page",
+      "source_page": "https://en.wikipedia.org/wiki/Les_Deux_Plateaux",
+      "confidence": "high"
+    }
+  ],
   "practical": {
     "type": "practical",
     "text_zh": "免费开放花园。布伦黑白条纹柱阵(Les Deux Plateaux)在入口广场。开放时间约 8:00-22:30(随季节变动)。地铁 Palais Royal–Musée du Louvre(1/7号线)。",
     "text_en": "Free public garden. Buren's black-and-white striped columns (Les Deux Plateaux) are on the entrance courtyard. Open roughly 8:00-22:30 (varies by season). Metro: Palais Royal–Musée du Louvre (L1/L7).",
     "confidence": "high"
-  }
+  },
+  "wiki_title": "Les Deux Plateaux"
 }

@@ -151,3 +151,20 @@ class ImageFetcher:
                            timeout=self.timeout)
         resp.raise_for_status()
         return self._pageimages_to_imagerefs(resp.json(), "mid")
+
+    def wiki_title_image(self, title: str) -> List[ImageRef]:
+        """Best source: fetch the lead image of an exact Wikipedia article
+        title. Curated per-article main image → accurate for named landmarks.
+        confidence=high."""
+        if not title:
+            return []
+        params = {
+            "action": "query", "format": "json", "titles": title,
+            "prop": "pageimages", "piprop": "original|thumbnail",
+            "pithumbsize": 800, "redirects": 1,
+        }
+        resp = self._get()(WIKIPEDIA_API, params=params,
+                           headers={"User-Agent": USER_AGENT},
+                           timeout=self.timeout)
+        resp.raise_for_status()
+        return self._pageimages_to_imagerefs(resp.json(), "high")

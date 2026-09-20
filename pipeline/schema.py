@@ -50,6 +50,7 @@ def load_poi(path: str) -> POI:
         base_images=[_image_from_dict(i) for i in d.get("base_images", []) if i],
         practical=_narrative_from_dict(d.get("practical")),
         default_photo_spot=_narrative_from_dict(d.get("default_photo_spot")),
+        wiki_title=d.get("wiki_title", ""),
     )
 
 
