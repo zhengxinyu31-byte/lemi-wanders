@@ -63,3 +63,15 @@ def test_three_chance_questions_answer_in_range():
     for q in qs:
         assert 0 <= q["answer_index"] < len(q["options_zh"])
         assert len(q["options_zh"]) == len(q["options_en"])
+
+
+def test_no_fabricated_maupassant_restaurant_myth():
+    """The 'Maupassant dined in the tower restaurant daily' story is a
+    documented fabrication (see VERIFIED_CONTENT.md) and must not reappear in
+    any storyline narrative — 'reputedly' does not launder it."""
+    storylines = os.path.join(ROOT, "content", "storylines")
+    for path in glob.glob(os.path.join(storylines, "*.json")):
+        text = open(path, encoding="utf-8").read()
+        assert "餐厅吃饭" not in text, f"{path} still carries the fabricated myth"
+        assert "dined in its restaurant" not in text, (
+            f"{path} still carries the fabricated myth (en)")

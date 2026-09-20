@@ -69,8 +69,8 @@
        "text_en": "The ultimate Paris symbol that recurs throughout the show; Emily glimpses it from her window, the bridges and everywhere — the visual anchor of her 'Paris dream'.", "confidence": "high"},
       {"type": "anecdote", "text_zh": "剧中 Emily 对铁塔的痴迷被法国观众吐槽'太游客视角'——巴黎本地人其实很少专程去看铁塔。这种'游客滤镜'正是该剧的争议核心。",
        "text_en": "Emily's obsession with the tower struck French viewers as 'too touristy' — locals rarely make a special trip to see it. This tourist gaze sits at the heart of the show's controversy.", "confidence": "high"},
-      {"type": "masterpiece", "text_zh": "铁塔本身是无数文学、绘画、电影的主题;从莫泊桑(据说他讨厌铁塔却天天在塔上餐厅吃饭)到现代流行文化,它是巴黎最被再创作的对象。",
-       "text_en": "The tower is the subject of countless works of literature, painting and film; from Maupassant (who reputedly hated it yet dined in its restaurant daily) to modern pop culture, it is Paris's most reimagined object.", "confidence": "mid"},
+      {"type": "masterpiece", "text_zh": "铁塔本身是无数文学、绘画、电影的主题;从曾在 1887 年联名抗议它的莫泊桑,到现代流行文化,它是巴黎最被再创作的对象。",
+       "text_en": "The tower is the subject of countless works of literature, painting and film; from Maupassant — a signatory of the 1887 protest against it — to modern pop culture, it is Paris's most reimagined object.", "confidence": "mid"},
       {"type": "history", "text_zh": "为1889年巴黎世博会而建,设计师古斯塔夫·埃菲尔。落成时曾遭巴黎文艺界联名反对,如今是法国最标志性的建筑。",
        "text_en": "Built for the 1889 World's Fair by Gustave Eiffel, it drew a petition of protest from the Paris art world when it opened; today it is France's most iconic structure.", "confidence": "mid"}
     ]}
