@@ -16,19 +16,28 @@ from pipeline.schema import load_city, load_poi, load_storyline
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+def _try(fetch):
+    """Call a fetch closure, returning [] on any network/parse failure."""
+    try:
+        return fetch()
+    except Exception:
+        return []
+
+
 def enrich_images(pois, fetcher, used):
-    """Fill each POI's base_images with one deduped image via the chain."""
+    """Fill each POI's base_images with one deduped image via the chain.
+
+    Each tier tries Commons first, then falls back to the Wikipedia API
+    (some networks block commons.wikimedia.org but allow en.wikipedia.org).
+    """
     for poi in pois.values():
         if poi.lat is None or poi.lng is None:
             continue
-        try:
-            geo = fetcher.geosearch(poi.lat, poi.lng)
-        except Exception:
-            geo = []
-        try:
-            named = fetcher.name_search(poi.name_en or poi.name_zh)
-        except Exception:
-            named = []
+        geo = _try(lambda: fetcher.geosearch(poi.lat, poi.lng)) \
+            or _try(lambda: fetcher.wiki_geosearch(poi.lat, poi.lng))
+        name = poi.name_en or poi.name_zh
+        named = _try(lambda: fetcher.name_search(name)) \
+            or _try(lambda: fetcher.wiki_name_search(name))
         chosen = pick_image([geo, named], used)
         poi.base_images = [chosen] if chosen else []
 

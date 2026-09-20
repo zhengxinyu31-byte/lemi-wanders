@@ -1,8 +1,13 @@
 {
-  "id": "tour-eiffel", "city": "paris", "country": "France",
-  "name_zh": "埃菲尔铁塔", "name_en": "Tour Eiffel",
-  "lat": 48.8560791, "lng": 2.2894654,
-  "address_zh": "战神广场,75007", "address_en": "Champ de Mars, 75007",
+  "id": "tour-eiffel",
+  "city": "paris",
+  "country": "France",
+  "name_zh": "埃菲尔铁塔",
+  "name_en": "Tour Eiffel",
+  "lat": 48.8560791,
+  "lng": 2.2894654,
+  "address_zh": "战神广场,75007",
+  "address_en": "Champ de Mars, 75007",
   "base_images": [],
   "practical": {
     "type": "practical",

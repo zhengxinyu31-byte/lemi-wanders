@@ -1,8 +1,13 @@
 {
-  "id": "pont-alexandre-iii", "city": "paris", "country": "France",
-  "name_zh": "亚历山大三世桥", "name_en": "Pont Alexandre III",
-  "lat": 48.8634697, "lng": 2.3135181,
-  "address_zh": "亚历山大三世桥,75008", "address_en": "Pont Alexandre III, 75008",
+  "id": "pont-alexandre-iii",
+  "city": "paris",
+  "country": "France",
+  "name_zh": "亚历山大三世桥",
+  "name_en": "Pont Alexandre III",
+  "lat": 48.8634697,
+  "lng": 2.3135181,
+  "address_zh": "亚历山大三世桥,75008",
+  "address_en": "Pont Alexandre III, 75008",
   "base_images": [],
   "practical": {
     "type": "practical",

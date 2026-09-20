@@ -1,8 +1,13 @@
 {
-  "id": "palais-garnier", "city": "paris", "country": "France",
-  "name_zh": "加尼叶歌剧院", "name_en": "Palais Garnier",
-  "lat": 48.8714332, "lng": 2.3319654,
-  "address_zh": "歌剧院广场,75009", "address_en": "Place de l'Opéra, 75009",
+  "id": "palais-garnier",
+  "city": "paris",
+  "country": "France",
+  "name_zh": "加尼叶歌剧院",
+  "name_en": "Palais Garnier",
+  "lat": 48.8714332,
+  "lng": 2.3319654,
+  "address_zh": "歌剧院广场,75009",
+  "address_en": "Place de l'Opéra, 75009",
   "base_images": [],
   "practical": {
     "type": "practical",

@@ -1,8 +1,13 @@
 {
-  "id": "place-estrapade", "city": "paris", "country": "France",
-  "name_zh": "埃斯特拉帕德广场(Emily 的公寓)", "name_en": "Place de l'Estrapade",
-  "lat": 48.845263, "lng": 2.3448184,
-  "address_zh": "埃斯特拉帕德广场,75005", "address_en": "Place de l'Estrapade, 75005",
+  "id": "place-estrapade",
+  "city": "paris",
+  "country": "France",
+  "name_zh": "埃斯特拉帕德广场(Emily 的公寓)",
+  "name_en": "Place de l'Estrapade",
+  "lat": 48.845263,
+  "lng": 2.3448184,
+  "address_zh": "埃斯特拉帕德广场,75005",
+  "address_en": "Place de l'Estrapade, 75005",
   "base_images": [],
   "practical": {
     "type": "practical",

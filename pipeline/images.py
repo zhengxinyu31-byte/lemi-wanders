@@ -13,6 +13,11 @@ from pipeline.models import ImageRef
 
 DEFAULT_TIMEOUT = 30
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
+# Fallback source: some networks block commons.wikimedia.org but allow the
+# language Wikipedia API, which returns the same Commons-hosted image URLs.
+WIKIPEDIA_API = "https://en.wikipedia.org/w/api.php"
+# Wikimedia's User-Agent policy asks for an identifying UA with a contact/URL.
+USER_AGENT = "LemisDiary/0.1 (https://github.com/lemis-diary/lemis-diary)"
 
 
 def fingerprint(img: ImageRef) -> str:
@@ -78,7 +83,7 @@ class ImageFetcher:
             "iiprop": "url|extmetadata", "iiurlwidth": 800, "inprop": "url",
         }
         resp = self._get()(COMMONS_API, params=params,
-                           headers={"User-Agent": "lemis-diary/0.1"},
+                           headers={"User-Agent": USER_AGENT},
                            timeout=self.timeout)
         resp.raise_for_status()
         return self._pages_to_imagerefs(resp.json(), "high")
@@ -92,7 +97,57 @@ class ImageFetcher:
             "iiurlwidth": 800, "inprop": "url",
         }
         resp = self._get()(COMMONS_API, params=params,
-                           headers={"User-Agent": "lemis-diary/0.1"},
+                           headers={"User-Agent": USER_AGENT},
                            timeout=self.timeout)
         resp.raise_for_status()
         return self._pages_to_imagerefs(resp.json(), "mid")
+
+    def _pageimages_to_imagerefs(self, data: dict, confidence: str) -> List[ImageRef]:
+        """Map a Wikipedia pageimages response to ImageRefs (page lead images)."""
+        pages = (data.get("query", {}) or {}).get("pages", {}) or {}
+        out: List[ImageRef] = []
+        for page in pages.values():
+            original = page.get("original") or {}
+            thumb = page.get("thumbnail") or {}
+            url = original.get("source") or thumb.get("source") or ""
+            if not url:
+                continue
+            title = page.get("title", "")
+            out.append(ImageRef(
+                url=url, thumb=thumb.get("source", url),
+                author="Wikimedia Commons", license="See Commons file page",
+                source_page=f"https://en.wikipedia.org/wiki/{title.replace(' ', '_')}",
+                confidence=confidence,
+            ))
+        return out
+
+    def wiki_geosearch(self, lat: float, lng: float,
+                       radius_m: int = 300) -> List[ImageRef]:
+        """Fallback: find Wikipedia articles near (lat,lng) and take their lead
+        images. Used when the Commons API is unreachable; confidence=high."""
+        params = {
+            "action": "query", "format": "json", "generator": "geosearch",
+            "ggscoord": f"{lat}|{lng}", "ggsradius": radius_m, "ggslimit": 10,
+            "prop": "pageimages", "piprop": "original|thumbnail",
+            "pithumbsize": 800,
+        }
+        resp = self._get()(WIKIPEDIA_API, params=params,
+                           headers={"User-Agent": USER_AGENT},
+                           timeout=self.timeout)
+        resp.raise_for_status()
+        return self._pageimages_to_imagerefs(resp.json(), "high")
+
+    def wiki_name_search(self, name: str) -> List[ImageRef]:
+        """Fallback: search Wikipedia articles by name and take their lead
+        images (person/work fallback). confidence=mid."""
+        params = {
+            "action": "query", "format": "json", "generator": "search",
+            "gsrsearch": name, "gsrnamespace": 0, "gsrlimit": 5,
+            "prop": "pageimages", "piprop": "original|thumbnail",
+            "pithumbsize": 800,
+        }
+        resp = self._get()(WIKIPEDIA_API, params=params,
+                           headers={"User-Agent": USER_AGENT},
+                           timeout=self.timeout)
+        resp.raise_for_status()
+        return self._pageimages_to_imagerefs(resp.json(), "mid")
