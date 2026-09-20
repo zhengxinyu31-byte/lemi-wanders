@@ -21,9 +21,22 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _attach_content(tiles, content_map):
-    """Assign content ids to filler tiles, cycling within each type."""
+    """Assign content ids to filler tiles, cycling within each type.
+
+    Photo tiles have no content pool; instead they hang on the next POI down
+    the board ("get your shot ready for the next stop"), so resolveTile can
+    show that POI's name, image and default_photo_spot. Without this a photo
+    tile carries no poi_id and resolves to a dead skip square.
+    """
     cursor = {k: 0 for k in content_map}
-    for t in tiles:
+    n = len(tiles)
+    for i, t in enumerate(tiles):
+        if t.type == "photo":
+            nxt = next((tiles[j].poi_id for j in range(i + 1, n)
+                        if tiles[j].type == "poi"), "")
+            if nxt:
+                t.poi_id = nxt
+            continue
         pool = content_map.get(t.type)
         if not pool:
             continue

@@ -101,7 +101,9 @@
                      + e.content.explain, host);
           await new Promise(function (r) { setTimeout(r, reduced() ? 200 : T.info); });
         } else if (e.kind === "photo") {
-          renderInfo("📸", e.content.name, host);
+          var photoText = e.content.name
+            + (e.content.spot ? "<br>" + e.content.spot : "");
+          renderInfo("📸", photoText, host);
           await new Promise(function (r) { setTimeout(r, reduced() ? 200 : T.info); });
         }
       }

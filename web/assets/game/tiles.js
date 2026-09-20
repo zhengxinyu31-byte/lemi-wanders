@@ -52,9 +52,13 @@ function resolveTile(tile, payload, lang) {
   if (tile.type === "photo") {
     var poi = (payload.pois || {})[tile.poi_id] || null;
     if (!poi) return _skip();
+    var spot = poi.default_photo_spot
+      ? pick(poi.default_photo_spot.text_zh, poi.default_photo_spot.text_en, lang)
+      : "";
     return { kind: "photo", durationMs: DURATIONS.info,
              content: { poiId: poi.id,
                         name: pick(poi.name_zh, poi.name_en, lang),
+                        spot: spot,
                         image: (poi.base_images || [])[0] || null } };
   }
   return _skip();

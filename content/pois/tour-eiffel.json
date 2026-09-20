@@ -24,5 +24,11 @@
     "text_en": "Paid to go up (roughly €18-29); book online ahead to skip the queues. There is a 5-minute sparkle show on the hour after dark. Metro: Bir-Hakeim (L6); Trocadéro has the best photo spot.",
     "confidence": "high"
   },
+  "default_photo_spot": {
+    "type": "photo_spot",
+    "text_zh": "Trocadéro 机位拍铁塔最佳。",
+    "text_en": "Trocadéro has the best photo spot for the tower.",
+    "confidence": "high"
+  },
   "wiki_title": "Eiffel Tower"
 }

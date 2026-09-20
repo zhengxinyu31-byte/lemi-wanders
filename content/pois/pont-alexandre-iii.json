@@ -24,5 +24,11 @@
     "text_en": "Free and open all day. The golden statues look best at sunset. Links Les Invalides with the Grand and Petit Palais. Metro: Invalides (L8/L13).",
     "confidence": "high"
   },
+  "default_photo_spot": {
+    "type": "photo_spot",
+    "text_zh": "日落时分,桥上的金色雕塑最美。",
+    "text_en": "The golden statues on the bridge look best at sunset.",
+    "confidence": "high"
+  },
   "wiki_title": "Pont Alexandre III"
 }

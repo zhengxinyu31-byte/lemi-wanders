@@ -24,5 +24,11 @@
     "text_en": "A free, open street square viewable any time. For the famous green door, come early when it is quiet; please respect residents, keep the noise down and do not enter the building. Nearest metro: Place Monge (L7).",
     "confidence": "high"
   },
+  "default_photo_spot": {
+    "type": "photo_spot",
+    "text_zh": "拍那扇著名的绿门,建议清晨人少时来。",
+    "text_en": "For the famous green door, come early when it is quiet.",
+    "confidence": "high"
+  },
   "wiki_title": "Place de l'Estrapade"
 }

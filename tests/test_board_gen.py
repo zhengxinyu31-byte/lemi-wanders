@@ -87,3 +87,24 @@ def test_indices_are_sequential():
     sl, pois = _load_real()
     tiles = build_board(sl, pois, FILLER_PLAN)
     assert [t.index for t in tiles] == list(range(20))
+
+
+def test_photo_tiles_get_the_next_pois_id():
+    """Photo tiles are dead squares unless attached to a POI. _attach_content
+    hangs each photo tile on the next POI down the board ("get your shot ready
+    for the next stop"), so resolveTile can find images to show."""
+    from pipeline.run_paris import _attach_content
+    sl, pois = _load_real()
+    tiles = build_board(sl, pois, FILLER_PLAN)
+    content_map = {
+        "street": ["s1"], "chance": ["c1"], "easter": ["e1"],
+    }
+    _attach_content(tiles, content_map)
+    photos = [t for t in tiles if t.type == "photo"]
+    assert photos, "board must contain photo tiles"
+    for t in photos:
+        assert t.poi_id, f"photo tile {t.index} must carry a poi_id"
+        # the assigned POI is the first POI strictly after this tile
+        nxt = next(p.poi_id for p in tiles
+                   if p.index > t.index and p.type == "poi")
+        assert t.poi_id == nxt

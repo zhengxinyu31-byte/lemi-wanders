@@ -97,6 +97,29 @@ def test_payload_stops_reference_poi_and_coord():
     assert payload["pois"]["cafe"]["lat"] == 48.854
 
 
+def _poi_with_spot(confidence):
+    return POI(id="tower", city="paris", country="FR",
+               name_zh="铁塔", name_en="Tower", lat=48.858, lng=2.294,
+               address_zh="地址", address_en="addr",
+               base_images=[ImageRef("u", "t", "a", "cc", "s", "high")],
+               default_photo_spot=Narrative("photo_spot", "机位提示", "spot tip",
+                                            confidence))
+
+
+def test_poi_default_photo_spot_is_emitted_when_confident():
+    payload = build_city_payload(PARIS, {"tower": _poi_with_spot("high")},
+                                 [], threshold="mid")
+    spot = payload["pois"]["tower"]["default_photo_spot"]
+    assert spot["text_zh"] == "机位提示"
+    assert spot["text_en"] == "spot tip"
+
+
+def test_poi_default_photo_spot_filtered_below_threshold():
+    payload = build_city_payload(PARIS, {"tower": _poi_with_spot("low")},
+                                 [], threshold="mid")
+    assert "default_photo_spot" not in payload["pois"]["tower"]
+
+
 def test_write_site_emits_json_and_copies_web(tmp_path):
     web = tmp_path / "web"
     (web / "assets").mkdir(parents=True)

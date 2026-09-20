@@ -37,6 +37,9 @@ def _poi_dict(poi: POI, threshold: str) -> dict:
            "base_images": images}
     if poi.practical and meets_threshold(poi.practical.confidence, threshold):
         out["practical"] = _narrative_dict(poi.practical)
+    if poi.default_photo_spot and meets_threshold(
+            poi.default_photo_spot.confidence, threshold):
+        out["default_photo_spot"] = _narrative_dict(poi.default_photo_spot)
     return out
 
 

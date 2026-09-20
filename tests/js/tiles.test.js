@@ -4,7 +4,11 @@ const { resolveTile, isNight, DURATIONS } = require("../../web/assets/game/tiles
 
 const PAYLOAD = {
   pois: { "tour-eiffel": { id: "tour-eiffel", name_zh: "埃菲尔铁塔",
-                           name_en: "Eiffel Tower" } },
+                           name_en: "Eiffel Tower",
+                           default_photo_spot: { text_zh: "Trocadéro 机位最佳",
+                                                 text_en: "Trocadéro has the best spot" } },
+          "cafe-de-flore": { id: "cafe-de-flore", name_zh: "花神咖啡",
+                             name_en: "Café de Flore" } },
   cards: { "paris-tour-eiffel-r": { id: "paris-tour-eiffel-r", rarity: "R",
                                     poi_id: "tour-eiffel", title_zh: "铁塔",
                                     title_en: "Tower", body_zh: "正文",
@@ -72,6 +76,28 @@ test("a tile whose content is missing degrades to a skip, not a crash", () => {
 
 test("poi tile with no matching card degrades to a skip", () => {
   const t = { index: 0, type: "poi", poi_id: "unknown-poi" };
+  assert.strictEqual(resolveTile(t, PAYLOAD, "zh").kind, "skip");
+});
+
+test("photo tile with a poi is not a skip and carries name + spot text", () => {
+  const t = { index: 12, type: "photo", poi_id: "tour-eiffel" };
+  const r = resolveTile(t, PAYLOAD, "zh");
+  assert.strictEqual(r.kind, "photo");
+  assert.strictEqual(r.content.name, "埃菲尔铁塔");
+  assert.strictEqual(r.content.spot, "Trocadéro 机位最佳");
+  assert.strictEqual(r.durationMs, 3000);
+});
+
+test("photo tile whose poi has no spot still resolves (spot empty, not skip)", () => {
+  const t = { index: 4, type: "photo", poi_id: "cafe-de-flore" };
+  const r = resolveTile(t, PAYLOAD, "zh");
+  assert.strictEqual(r.kind, "photo");
+  assert.strictEqual(r.content.name, "花神咖啡");
+  assert.strictEqual(r.content.spot, "");
+});
+
+test("photo tile with no poi_id degrades to a skip", () => {
+  const t = { index: 4, type: "photo" };
   assert.strictEqual(resolveTile(t, PAYLOAD, "zh").kind, "skip");
 });
 
