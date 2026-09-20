@@ -6,10 +6,13 @@ import os
 import shutil
 from typing import Dict, List
 
-from pipeline.models import City, ImageRef, Narrative, POI, StoryLine
+from pipeline.models import (
+    BoardTile, Card, City, ImageRef, Narrative, POI, StoryLine, StreetCard,
+)
 from pipeline.schema import (
     resolve_photo_spot, stops_for_storyline, visible_narrative,
 )
+from pipeline.verify import filter_street_cards, quote_passes
 
 
 def _image_dict(img: ImageRef) -> dict:
@@ -84,3 +87,46 @@ def write_site(payload: dict, web_dir: str, dist_dir: str) -> None:
         html = f.read().replace("{{CITY_ID}}", city_id)
     with open(os.path.join(dist_dir, "index.html"), "w", encoding="utf-8") as f:
         f.write(html)
+
+
+def _tile_dict(t: BoardTile) -> dict:
+    d = {"index": t.index, "type": t.type, "lat": t.lat, "lng": t.lng}
+    if t.poi_id:
+        d["poi_id"] = t.poi_id
+    if t.content_id:
+        d["content_id"] = t.content_id
+    return d
+
+
+def _card_dict(c: Card) -> dict:
+    d = {"id": c.id, "rarity": c.rarity, "storyline_id": c.storyline_id,
+         "poi_id": c.poi_id, "title_zh": c.title_zh, "title_en": c.title_en,
+         "body_zh": c.body_zh, "body_en": c.body_en}
+    if c.image:
+        d["image"] = _image_dict(c.image)
+    if quote_passes(c.quote):
+        d["quote"] = {"text_zh": c.quote.text_zh,
+                      "text_original": c.quote.text_original,
+                      "source": c.quote.source,
+                      "source_url": c.quote.source_url}
+    return d
+
+
+def _street_dict(s: StreetCard) -> dict:
+    # sources 只用于构建时校验,不输出到前端
+    return {"id": s.id, "category": s.category,
+            "text_zh": s.text_zh, "text_en": s.text_en,
+            "near_poi_id": s.near_poi_id}
+
+
+def build_game_payload(tiles, cards, street_cards, chance,
+                       night_from_index: int) -> dict:
+    """Build the game-mode payload: board, cards, street cards, quiz."""
+    return {
+        "board": [_tile_dict(t) for t in tiles],
+        "cards": {c.id: _card_dict(c) for c in cards},
+        "street_cards": {s.id: _street_dict(s)
+                         for s in filter_street_cards(street_cards)},
+        "chance": {q["id"]: q for q in chance},
+        "night_from_index": night_from_index,
+    }

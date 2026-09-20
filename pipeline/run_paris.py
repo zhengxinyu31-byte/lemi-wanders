@@ -7,13 +7,28 @@ global dedup, assembles the payload, and writes dist/.
 from __future__ import annotations
 
 import glob
+import json
 import os
 
-from pipeline.build_site import build_city_payload, write_site
+from pipeline.board_gen import build_board
+from pipeline.build_site import build_city_payload, build_game_payload, write_site
 from pipeline.images import ImageFetcher, pick_image
-from pipeline.schema import load_city, load_poi, load_storyline
+from pipeline.schema import (
+    load_card, load_chance, load_city, load_poi, load_storyline, load_street_card,
+)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _attach_content(tiles, content_map):
+    """Assign content ids to filler tiles, cycling within each type."""
+    cursor = {k: 0 for k in content_map}
+    for t in tiles:
+        pool = content_map.get(t.type)
+        if not pool:
+            continue
+        t.content_id = pool[cursor[t.type] % len(pool)]
+        cursor[t.type] += 1
 
 
 def _try(fetch):
@@ -58,7 +73,24 @@ def main(offline: bool = False) -> None:
     if not offline:
         enrich_images(pois, ImageFetcher(), set())
 
+    board_cfg = json.loads(open(
+        os.path.join(ROOT, "content", "boards", "emily-in-paris.json"),
+        encoding="utf-8").read())
+    sl = next(s for s in storylines if s.id == board_cfg["storyline_id"])
+    tiles = build_board(sl, pois, board_cfg["filler_plan"],
+                        board_cfg["total_filler"])
+    _attach_content(tiles, board_cfg["content_map"])
+
+    cards = [load_card(p) for p in
+             sorted(glob.glob(os.path.join(ROOT, "content", "cards", "*.json")))]
+    street = [load_street_card(p) for p in
+              sorted(glob.glob(os.path.join(ROOT, "content", "street", "*.json")))]
+    chance = [load_chance(p) for p in
+              sorted(glob.glob(os.path.join(ROOT, "content", "chance", "*.json")))]
+
     payload = build_city_payload(city, pois, storylines)
+    payload.update(build_game_payload(tiles, cards, street, chance,
+                                      board_cfg["night_from_index"]))
     write_site(payload, os.path.join(ROOT, "web"), os.path.join(ROOT, "dist"))
     print("Built dist/ for city:", city.id, "POIs:", len(pois))
 
