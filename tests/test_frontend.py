@@ -16,7 +16,7 @@ def test_city_html_references_maplibre_and_app():
     html = open(os.path.join(WEB, "templates", "city.html"), encoding="utf-8").read()
     assert "maplibre-gl" in html
     assert "app.js" in html
-    assert "__CITY_ID__" in html  # 构建期占位符
+    assert "{{CITY_ID}}" in html  # 构建期占位符
 
 
 def test_app_js_defines_picklang_and_visible():

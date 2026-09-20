@@ -11,7 +11,6 @@ import os
 
 from pipeline.build_site import build_city_payload, write_site
 from pipeline.images import ImageFetcher, pick_image
-from pipeline.models import ImageRef
 from pipeline.schema import load_city, load_poi, load_storyline
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

@@ -59,6 +59,7 @@ async function boot() {
     });
     if (map.getSource("route")) map.getSource("route").setData(routeGeo(coords));
     else if (map.loaded()) addRoute(map, coords);
+    renderStorylineTabs(shaped, sl.id);
     renderSidebar(sl, payload, i18nCurrent, lang);
     addMarkers(map, sl, payload);
   }
@@ -95,6 +96,21 @@ function addMarkers(map, sl, payload) {
     window.__lemiMarkers.push(m);
   });
 }
+function renderStorylineTabs(shaped, activeId) {
+  const box = document.getElementById("storyline-tabs");
+  if (!box) return;
+  box.innerHTML = "";
+  shaped.forEach(function (sl) {
+    const btn = document.createElement("button");
+    btn.textContent = sl.title;
+    if (sl.id === activeId) {
+      btn.style.background = "#c0392b";
+      btn.style.color = "#fff";
+    }
+    btn.addEventListener("click", function () { window.__lemiSetStoryline(sl.id); });
+    box.appendChild(btn);
+  });
+}
 function renderSidebar(sl, payload, i18n, lang) {
   const box = document.getElementById("sidebar-content");
   if (!box) return;
@@ -112,6 +128,9 @@ function renderSidebar(sl, payload, i18n, lang) {
       if (n.image) html += '<img src="' + n.image.thumb + '" alt="" />';
     });
     if (st.photo_spot) html += '<p><b>' + i18n.photo_spot + '</b>: ' + st.photo_spot.text + '</p>';
+    if (p.practical) {
+      html += '<p><b>' + i18n.practical + '</b>: ' + pickLang(p.practical.text_zh, p.practical.text_en, lang) + '</p>';
+    }
     card.innerHTML = html;
     box.appendChild(card);
   });

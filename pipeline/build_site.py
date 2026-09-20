@@ -81,6 +81,6 @@ def write_site(payload: dict, web_dir: str, dist_dir: str) -> None:
     # render city page (replace placeholder with city id)
     tpl_path = os.path.join(web_dir, "templates", "city.html")
     with open(tpl_path, "r", encoding="utf-8") as f:
-        html = f.read().replace("__CITY_ID__", city_id)
+        html = f.read().replace("{{CITY_ID}}", city_id)
     with open(os.path.join(dist_dir, "index.html"), "w", encoding="utf-8") as f:
         f.write(html)

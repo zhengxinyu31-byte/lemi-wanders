@@ -50,7 +50,7 @@ def test_write_site_emits_json_and_copies_web(tmp_path):
     web = tmp_path / "web"
     (web / "assets").mkdir(parents=True)
     (web / "templates").mkdir(parents=True)
-    (web / "templates" / "city.html").write_text("<html>__CITY_ID__</html>", encoding="utf-8")
+    (web / "templates" / "city.html").write_text("<html>{{CITY_ID}}</html>", encoding="utf-8")
     (web / "assets" / "app.js").write_text("// app", encoding="utf-8")
     dist = tmp_path / "dist"
     payload = build_city_payload(PARIS, {"cafe": _poi()}, [_storyline()])
@@ -60,3 +60,7 @@ def test_write_site_emits_json_and_copies_web(tmp_path):
     loaded = json.loads(data_file.read_text(encoding="utf-8"))
     assert loaded["city"]["id"] == "paris"
     assert (dist / "assets" / "app.js").exists()
+    # placeholder must be replaced with the city id (and no raw token left)
+    index_html = (dist / "index.html").read_text(encoding="utf-8")
+    assert "paris" in index_html
+    assert "{{CITY_ID}}" not in index_html
