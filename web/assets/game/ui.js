@@ -1,8 +1,11 @@
-// Page wiring for game mode: boot the map, bind the die, render cards.
-// All decision logic lives in the tested modules; this file only moves DOM.
+// Page wiring for game mode: boot the map, draw the board, bind the die,
+// render cards. All decision logic lives in the tested modules (game.js,
+// tiles.js, board_view.js, collection.js); this file only moves DOM.
 
 (function () {
   if (typeof window === "undefined" || !document.getElementById) return;
+
+  var B = window.LemiBoard;
 
   var T = { press: 100, dice: 400, walk: 1000, cardOut: 150,
             develop: 350, set: 100, info: 3000 };
@@ -34,9 +37,29 @@
       html += '<p class="source">' + card.quote.source + "</p>";
     }
     box.innerHTML = html;
-    // Any click anywhere collects the card — no extra button to aim at.
-    box.addEventListener("click", function () { box.remove(); onClose(); });
+    // Keyboard users must be able to collect the card too (spec §12): the die
+    // stays disabled until the card's Promise resolves, and before this the
+    // only way to resolve it was a mouse click — a keyboard user landing on a
+    // POI was trapped forever.
+    box.setAttribute("tabindex", "0");
+    box.setAttribute("role", "button");
+    box.setAttribute("aria-label", card.title);
+    var collected = false;
+    function collect() {
+      if (collected) return;   // click + keydown must not double-fire
+      collected = true;
+      box.remove();
+      onClose();
+    }
+    box.addEventListener("click", collect);
+    box.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter" || ev.key === " " || ev.key === "Spacebar") {
+        ev.preventDefault();
+        collect();
+      }
+    });
     host.appendChild(box);
+    box.focus();
     if (!reduced()) {
       setTimeout(function () { box.classList.add("set"); }, T.develop);
     }
@@ -69,6 +92,55 @@
     var game = window.LemiGame.createGame(payload, storage,
                                           { camera: camera, lang: lang });
     var host = document.getElementById("card-host");
+    var board = payload.board || [];
+
+    // ---- Board rendering (spec §7). Without this the player sees a bare
+    // basemap flying around: no squares, no pawn, no sense of where Lemi is.
+    var tileMarkers = [];      // index -> MapLibre Marker for each board tile
+    var visited = {};          // index -> true once the pawn has been there
+    var pawnMarker = null;
+
+    function markTileVisited(idx) {
+      visited[idx] = true;
+      var m = tileMarkers[idx];
+      if (m) m.getElement().className = B.tileClass(board[idx], true);
+    }
+
+    function drawBoard() {
+      board.forEach(function (tile, idx) {
+        var el = document.createElement("div");
+        el.className = B.tileClass(tile, false);
+        el.textContent = B.tileText(tile, B.poiOrdinal(board, idx));
+        el.setAttribute("aria-hidden", "true");
+        var m = new maplibregl.Marker({ element: el })
+          .setLngLat(B.tileLngLat(tile, window.LemiMap.toLngLat))
+          .addTo(map);
+        tileMarkers[idx] = m;
+      });
+    }
+
+    function drawPawn() {
+      var start = game.state().position;
+      var tile = board[start];
+      if (!tile) return;
+      var el = document.createElement("div");
+      el.id = "pawn";
+      el.textContent = "🐹";          // Lemi: cowboy-hat, camera-toting hamster
+      el.setAttribute("role", "img");
+      el.setAttribute("aria-label", "Lemi");
+      pawnMarker = new maplibregl.Marker({ element: el, anchor: "bottom" })
+        .setLngLat(B.tileLngLat(tile, window.LemiMap.toLngLat))
+        .addTo(map);
+      markTileVisited(start);
+    }
+
+    function movePawn(event) {
+      var tile = B.pawnTile(board, event);
+      if (!tile || !pawnMarker) return;
+      // CSS handles the --t-walk glide; setLngLat updates the anchor.
+      pawnMarker.setLngLat(B.tileLngLat(tile, window.LemiMap.toLngLat));
+      markTileVisited(event.tileIndex);
+    }
 
     function refreshAlbum() {
       var c = window.LemiCollection.buildCollection(payload, storage, lang);
@@ -81,9 +153,68 @@
       document.getElementById("daypart").textContent = night ? "🌃 夜晚" : "☀️ 白天";
     }
 
+    // ---- Album overlay (spec §8). buildCollection already computes the
+    // silhouette slots, owned/total and SSR shard progress; this renders it.
+    function openAlbum() {
+      var c = window.LemiCollection.buildCollection(payload, storage, lang);
+      var overlay = document.createElement("div");
+      overlay.id = "album";
+      overlay.setAttribute("role", "dialog");
+      overlay.setAttribute("aria-modal", "true");
+      overlay.setAttribute("aria-label", "卡册");
+
+      var head = document.createElement("div");
+      head.className = "album-head";
+      var count = document.createElement("span");
+      count.className = "album-total";
+      count.textContent = c.owned + "/" + c.total;
+      var close = document.createElement("button");
+      close.type = "button";
+      close.className = "album-close";
+      close.textContent = "✕";
+      close.setAttribute("aria-label", "关闭卡册");
+      head.appendChild(count);
+      head.appendChild(close);
+      overlay.appendChild(head);
+
+      var grid = document.createElement("div");
+      grid.className = "album-grid";
+      c.slots.forEach(function (slot) {
+        var cell = document.createElement("div");
+        cell.className = "slot" + (slot.owned ? " owned" : " locked");
+        if (slot.owned) {
+          cell.textContent = slot.title;   // "?" for locked comes from CSS
+        }
+        grid.appendChild(cell);
+      });
+      overlay.appendChild(grid);
+
+      // SSR: always a visible locked reward with shard progress (spec §8).
+      var ssr = document.createElement("div");
+      ssr.className = "ssr-slot" + (c.ssr.locked ? " locked" : " owned");
+      ssr.textContent = "SSR " + (c.ssr.locked ? "🔒 " : "") +
+        c.ssr.shards + "/" + c.ssr.required;
+      overlay.appendChild(ssr);
+
+      function dismiss() {
+        overlay.remove();
+        document.removeEventListener("keydown", onKey);
+      }
+      function onKey(ev) { if (ev.key === "Escape") dismiss(); }
+      close.addEventListener("click", dismiss);
+      overlay.addEventListener("click", function (ev) {
+        if (ev.target === overlay) dismiss();   // click backdrop to close
+      });
+      document.addEventListener("keydown", onKey);
+
+      document.body.appendChild(overlay);
+      close.focus();
+    }
+
     async function playEvents(events) {
       for (var i = 0; i < events.length; i++) {
         var e = events[i];
+        movePawn(e);
         setDaypart(e.night);
         if (e.kind === "card") {
           await new Promise(function (done) {
@@ -109,6 +240,8 @@
       }
     }
 
+    document.getElementById("album-btn").addEventListener("click", openAlbum);
+
     var dice = document.getElementById("dice");
     dice.addEventListener("click", async function () {
       if (dice.disabled) return;
@@ -121,12 +254,14 @@
     });
 
     map.on("load", async function () {
+      drawBoard();
+      drawPawn();
       refreshAlbum();
       setDaypart(game.state().night);
       // The board's opening tile (Emily's flat) is never walked by roll(),
-      // so its card is only ever collected here. start() is idempotent, so
-      // reloading the page is safe.
-      await playEvents(game.start());
+      // so its card is only ever collected here. start() is async and
+      // idempotent, so it must be awaited and reloading the page is safe.
+      await playEvents(await game.start());
     });
   }
 

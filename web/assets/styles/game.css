@@ -42,8 +42,45 @@
   100% { transform: rotateX(720deg) rotateY(360deg); }
 }
 
-/* Pawn: Lemi walking with her backpack. */
-#pawn { width: 36px; height: 36px; transition: transform var(--t-walk) linear; }
+/* Pawn: Lemi walking with her backpack. A round badge so she reads on the
+   basemap; the emoji is the fallback when there is no image asset. */
+#pawn {
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; line-height: 1;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--accent);
+  box-shadow: 0 2px 6px rgba(0,0,0,.35);
+  transition: transform var(--t-walk) linear;
+}
+
+/* Board tiles. POI squares are the destinations and read largest and gold;
+   the on-the-way filler squares read smaller and quieter. Visited squares
+   fade so progress along the trail is legible. */
+.tile {
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  font-size: 12px; font-weight: 700;
+  color: var(--ink);
+  background: var(--paper);
+  border: 2px solid var(--line);
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.tile-poi {
+  width: 30px; height: 30px;
+  font-size: 15px;
+  color: #fff;
+  background: var(--accent);
+  border-color: var(--gold);
+}
+.tile-easter { width: 22px; height: 22px; color: var(--gold);
+               border-color: var(--gold); }
+.tile-chance,
+.tile-photo  { width: 20px; height: 20px; }
+.tile-street { width: 14px; height: 14px; font-size: 10px; opacity: .85; }
+.tile.visited { opacity: .4; }
+.tile-poi.visited { opacity: .6; }
 
 /* Card: a Polaroid developing. The blur-to-sharp reveal IS the suspense. */
 .card {
@@ -74,12 +111,37 @@
 .card .quote { margin-top: 14px; font-size: 18px; }
 .card .source { font-size: 12px; color: #888; }
 
-/* Album: unowned cards stay visible as silhouettes so the gap is legible. */
-#album { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-.slot { aspect-ratio: 3/4; border-radius: var(--radius); }
-.slot.locked { background: #ddd6cc; color: #a89e92;
-               display: flex; align-items: center; justify-content: center; }
+/* Album: full-screen overlay. Unowned cards stay visible as silhouettes so
+   the gap is legible (spec §8). */
+#album {
+  position: fixed; inset: 0; z-index: 10;
+  background: var(--paper);
+  padding: 16px;
+  overflow-y: auto;
+}
+.album-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.album-total { font-size: 20px; font-weight: 700; }
+.album-close { background: var(--line); }
+.album-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.slot { aspect-ratio: 3/4; border-radius: var(--radius);
+        display: flex; align-items: center; justify-content: center;
+        text-align: center; padding: 8px; }
+.slot.owned { background: #fff; border: 2px solid var(--gold);
+              font-weight: 600; }
+.slot.locked { background: #ddd6cc; color: #a89e92; }
 .slot.locked::after { content: "?"; font-size: 32px; }
+.ssr-slot {
+  margin-top: 16px; padding: 14px; border-radius: var(--radius);
+  text-align: center; font-weight: 700;
+  border: 2px solid transparent;
+  background-image: linear-gradient(var(--paper), var(--paper)),
+                    linear-gradient(90deg,#f0a,#0af,#af0,#f0a);
+  background-origin: border-box; background-clip: padding-box, border-box;
+}
+.ssr-slot.locked { color: #8a8378; }
 
 #toast {
   position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%);

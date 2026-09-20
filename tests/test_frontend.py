@@ -15,8 +15,8 @@ def test_i18n_files_have_same_keys():
 def test_board_html_loads_all_modules():
     html = open(os.path.join(WEB, "templates", "board.html"), encoding="utf-8").read()
     for mod in ("core/storage.js", "core/mapkit.js", "game/dice.js",
-                "game/card.js", "game/tiles.js", "game/collection.js",
-                "game/game.js", "game/ui.js"):
+                "game/card.js", "game/board_view.js", "game/tiles.js",
+                "game/collection.js", "game/game.js", "game/ui.js"):
         assert mod in html, f"board.html must load {mod}"
     assert "maplibre-gl" in html
     assert "{{CITY_ID}}" in html
