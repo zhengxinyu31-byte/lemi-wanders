@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Lemi's Diary · 图鉴</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<link href="./assets/styles/base.css" rel="stylesheet" />
+<link href="./assets/styles/codex.css" rel="stylesheet" />
+</head>
+<body>
+<div id="codex">
+  <div id="codex-map"></div>
+  <div id="chapters"></div>
+</div>
+<a id="to-game" href="./index.html">🎲 玩游戏</a>
+
+<script>window.__CITY_ID__ = "{{CITY_ID}}";</script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/scrollama"></script>
+<script src="./assets/core/mapkit.js"></script>
+<script src="./assets/codex/codex.js"></script>
+<script>
+(function () {
+  async function boot() {
+    var cityId = window.__CITY_ID__ || "paris";
+    var lang = localStorage.getItem("lemi_lang") || "zh";
+    var payload = await fetch("./data/" + cityId + ".json")
+      .then(function (r) { return r.json(); });
+
+    var chapters = window.LemiCodex.buildChapters(payload, lang);
+    var host = document.getElementById("chapters");
+    chapters.forEach(function (c) {
+      var sec = document.createElement("section");
+      sec.className = "chapter";
+      sec.dataset.stop = c.order;
+      var html = "<h2>" + c.order + ". " + c.title + "</h2>";
+      if (c.image) html += '<img src="' + c.image.thumb + '" alt="" />';
+      c.blocks.forEach(function (b) { html += '<p class="serif">' + b.text + "</p>"; });
+      sec.innerHTML = html;
+      host.appendChild(sec);
+    });
+
+    var map = new maplibregl.Map({
+      container: "codex-map",
+      style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+      center: chapters.length ? chapters[0].center
+                              : [payload.city.center_lng, payload.city.center_lat],
+      zoom: 14,
+    });
+
+    var reduced = window.matchMedia
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    scrollama().setup({ step: ".chapter", offset: "300px" })
+      .onStepEnter(function (res) {
+        document.querySelectorAll(".chapter").forEach(function (el) {
+          el.classList.remove("active");
+        });
+        res.element.classList.add("active");
+        var c = chapters[res.index];
+        map.flyTo({ center: c.center, zoom: 16, pitch: reduced ? 0 : 45,
+                    duration: reduced ? 200 : 1200, essential: true });
+        history.replaceState(null, "", window.LemiCodex.hashForStop(c.order));
+      });
+
+    var target = window.LemiCodex.stopFromHash(location.hash);
+    var el = document.querySelector('.chapter[data-stop="' + target + '"]');
+    if (el) el.scrollIntoView();
+  }
+  window.addEventListener("DOMContentLoaded", boot);
+})();
+</script>
+</body>
+</html>

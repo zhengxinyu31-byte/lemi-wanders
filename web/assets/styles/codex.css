@@ -1,0 +1,34 @@
+/* Codex mode. Scrollama drives the camera from scroll position.
+   Note: no vh units anywhere — scrolling changes vh on mobile and would
+   retrigger resize handlers. dvh/percentages only. */
+
+#codex { display: flex; flex-direction: column; }
+
+#codex-map {
+  position: sticky; top: 0;
+  height: 40dvh;
+  z-index: 1;
+}
+
+#chapters { padding: 24px 18px 60dvh; }
+
+.chapter {
+  min-height: 70dvh;
+  padding: 24px 0;
+  opacity: .35;
+  transition: opacity 300ms;
+}
+.chapter.active { opacity: 1; }
+.chapter img { width: 100%; border-radius: 10px; }
+.chapter h2 { font-size: 22px; }
+.chapter p { line-height: 1.75; }
+
+@media (min-width: 860px) {
+  #codex { flex-direction: row-reverse; }
+  #codex-map { flex: 1; height: 100dvh; }
+  #chapters { flex: 0 0 420px; padding: 40px 28px 60dvh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chapter { transition: none; }
+}

@@ -52,3 +52,18 @@ def test_animation_durations_match_the_spec():
     for token in ("--t-press", "--t-dice", "--t-walk", "--t-card-out",
                   "--t-card-develop"):
         assert f"var({token})" in game, f"game.css must use var({token})"
+
+
+def test_codex_css_avoids_vh_units():
+    css = open(os.path.join(WEB, "assets", "styles", "codex.css"),
+               encoding="utf-8").read()
+    import re
+    # dvh is fine; bare vh retriggers resize while scrolling on mobile
+    assert not re.search(r"\d+vh\b", css), "codex.css must not use vh units"
+
+
+def test_codex_html_loads_scrollama():
+    html = open(os.path.join(WEB, "templates", "codex.html"),
+                encoding="utf-8").read()
+    assert "scrollama" in html
+    assert "essential" in html, "flyTo must pass essential:true"

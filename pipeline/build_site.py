@@ -91,6 +91,13 @@ def write_site(payload: dict, web_dir: str, dist_dir: str) -> None:
     with open(os.path.join(dist_dir, "index.html"), "w", encoding="utf-8") as f:
         f.write(html)
 
+    codex_tpl = os.path.join(web_dir, "templates", "codex.html")
+    if os.path.isfile(codex_tpl):
+        with open(codex_tpl, "r", encoding="utf-8") as f:
+            codex_html = f.read().replace("{{CITY_ID}}", city_id)
+        with open(os.path.join(dist_dir, "codex.html"), "w", encoding="utf-8") as f:
+            f.write(codex_html)
+
 
 def _tile_dict(t: BoardTile) -> dict:
     d = {"index": t.index, "type": t.type, "lat": t.lat, "lng": t.lng}
