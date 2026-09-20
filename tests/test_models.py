@@ -41,3 +41,33 @@ def test_storystop_carries_narrative():
 def test_narrative_types_constant():
     assert "anecdote" in NARRATIVE_TYPES
     assert CONFIDENCE_ORDER["high"] > CONFIDENCE_ORDER["low"]
+
+
+from pipeline.models import BoardTile, Card, Quote, StreetCard
+
+
+def test_board_tile_defaults():
+    t = BoardTile(index=0, type="poi", lat=48.8, lng=2.3)
+    assert t.poi_id == ""
+    assert t.content_id == ""
+
+
+def test_quote_requires_source_fields():
+    q = Quote(text_zh="你好", text_original="Bonjour",
+              source="S1E1", source_url="https://example.com", verified=True)
+    assert q.verified is True
+
+
+def test_card_quote_optional():
+    c = Card(id="paris-flore-r", rarity="R", storyline_id="emily-in-paris")
+    assert c.quote is None
+    assert c.image is None
+
+
+def test_street_card_sources_list():
+    s = StreetCard(id="paris-bonjour", category="etiquette",
+                   text_zh="进店先说 Bonjour", text_en="Say Bonjour",
+                   near_poi_id="cafe-de-flore",
+                   sources=["https://a.example", "https://b.example"],
+                   verified=True)
+    assert len(s.sources) == 2

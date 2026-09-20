@@ -103,3 +103,60 @@ class City:
     center_lat: float
     center_lng: float
     bbox: Tuple[float, float, float, float]
+
+
+TILE_TYPES = ("poi", "chance", "photo", "street", "easter")
+RARITIES = ("R", "SR", "SSR")
+STREET_CATEGORIES = ("rule", "transit", "etiquette", "trivia")
+
+
+@dataclass
+class BoardTile:
+    """One square on the board; POI squares point at a shared POI."""
+
+    index: int
+    type: str
+    lat: float
+    lng: float
+    poi_id: str = ""
+    content_id: str = ""
+
+
+@dataclass
+class Quote:
+    """A handwritten-font quote on a card. Every field is required."""
+
+    text_zh: str
+    text_original: str
+    source: str
+    source_url: str
+    verified: bool
+
+
+@dataclass
+class Card:
+    """A collectible card dropped when landing on a POI or easter-egg tile."""
+
+    id: str
+    rarity: str
+    storyline_id: str
+    poi_id: str = ""
+    image: Optional[ImageRef] = None
+    title_zh: str = ""
+    title_en: str = ""
+    body_zh: str = ""
+    body_en: str = ""
+    quote: Optional[Quote] = None
+
+
+@dataclass
+class StreetCard:
+    """A Paris street-knowledge card shown on street tiles."""
+
+    id: str
+    category: str
+    text_zh: str
+    text_en: str
+    near_poi_id: str
+    sources: List[str] = field(default_factory=list)
+    verified: bool = False
