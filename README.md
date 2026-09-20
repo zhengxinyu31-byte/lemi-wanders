@@ -74,3 +74,62 @@ dist/        # 产物层:构建输出的纯静态站(可直接部署,已被 .git
 - **StoryLine（故事线）** —— 一条有主题、有顺序的城市路线，由若干 StoryStop 组成（`title` / `theme` / `summary` 均双语）。
 
 叙事都带 `confidence`（`low` / `mid` / `high`），构建时按阈值（默认 `mid`）过滤，低置信内容不展示，保证呈现质量。
+
+## v2:大富翁棋盘 + 双模式
+
+v2 在原有的「故事线漫步」之上，新增了一套**大富翁式集卡玩法**，并把整个站点拆成两种入口互不干扰的模式。
+
+### 玩法说明
+
+- 摇骰子，Lemi 沿一条 **20 格棋盘**逐格前进（首末格都是 POI，途中穿插 photo / street / chance / easter 等格子）。
+- 走到 **POI 格**：镜头俯冲到该地点，弹出一张拍立得卡片，从模糊显影为清晰，点击任意处即可收入卡册。
+- 走到 **photo 格**：提示为「下一站」提前取景（它挂在下一个 POI 上，不是死格子）。
+- 走到 **street / chance / easter 格**：分别掉落街头小贴士、冷知识问答、彩蛋卡。
+- 走过**第 13 格**后切入夜景（`night_from_index = 13`），铁塔格夜间可见。
+- **卡册共 10 张**（7 张 R + 3 张 SR），外加 5 条街头卡；卡册分母固定为 10，未获得的卡显示剪影 `?` 占位；重复掉落不重复计数。
+- 全流程尊重系统「减弱动态效果」：开启后动效降级但流程仍可走完（`flyTo` 均带 `essential: true`，不会被降级成瞬移）。
+
+### 两种模式入口
+
+站点构建出两个页面，共享同一份 `dist/data/<city>.json` 数据，仅共享 `lemi_lang` 语言偏好：
+
+| 模式 | 入口 | 说明 |
+|---|---|---|
+| **游戏模式** | `dist/index.html` | 摇骰子、集卡、卡册。玩家状态存于 `localStorage`（`lemi_state`）。页面右上角有「📖 图鉴」入口。 |
+| **图鉴模式** | `dist/codex.html` | 只读的滚动叙事（scrollytelling）：滚动驱动地图沿故事线飞行，URL 出现 `#stop=N`，刷新/分享可恢复到该站。 |
+
+> **图鉴模式与玩家状态完全解耦**：它不读写 `localStorage`（`lemi_lang` 除外）、不显示任何集卡进度、不显示角标。服务的是「只想查资料的人」，与游戏模式在状态上彻底分开。图鉴模式经 CDN 引入 Scrollama 依赖整页滚动，CSS 一律用 `dvh`/百分比而非 `vh`（移动端滚动会改变 `vh` 并触发 resize 抖动）。
+
+### `content/` 各目录职责
+
+内容仍全部是人可读可编辑的 JSON：
+
+- `content/cities/` —— 城市与地图中心配置。
+- `content/pois/` —— 共享地点（客观信息，跨故事线复用）。
+- `content/storylines/` —— 故事线（`stops[].poi_id` 按 `order` 串联，叙事挂在 stop 上）。
+- `content/boards/` —— 棋盘配置：`storyline_id`、`filler_plan`（各类填充格数量）、`total_filler`、`content_map`（格子类型 → 内容池映射）、`night_from_index`。
+- `content/cards/` —— 集卡卡面（R / SR / SSR），带 `rarity`、双语标题正文、可选 `quote`。
+- `content/street/` —— 街头卡（实用贴士，带 `category` 与 `near_poi_id`）。
+- `content/chance/` —— 机会格问答（冷知识）。
+
+### `VERIFIED_CONTENT.md` 的作用与新增内容的验证要求
+
+`content/VERIFIED_CONTENT.md` 是 `content/street/` 与 `content/cards/` 中 `quote`、事实性文案的**验证台账**：记录每条内容 `verified=true` 的依据，便于日后复核。构建时 `pipeline/verify.py` 会据此对街头卡与引文做 gate 过滤，未通过验证的引文不会输出到前端。
+
+**新增任何事实性内容（街头卡、卡面引文、冷知识）时必须：**
+
+1. **交叉验证 ≥ 2 个独立来源**：在 `VERIFIED_CONTENT.md` 对应条目下列出 `sources`（至少两个可访问链接）。
+2. **对抗性审查**：主动找反例、边界情况与例外，确认没有「一刀切」的错误概括。
+3. **措辞不说绝**：对存在例外/因人而异的情形，用「通常」「部分」「常被当成」「可能」等收紧措辞，并在条目下记录收紧理由（例：地铁门只有「部分较旧车厢」需手动开；咖啡分级定价是「合法惯例」而非「法律强制」）。
+
+### 本地预览与部署
+
+```bash
+# 离线构建(用已存内容,不联网配图),同时产出 index.html 与 codex.html
+LEMI_OFFLINE=1 python3 -m pipeline.run_paris
+
+# 本地预览:游戏模式 http://localhost:8090/  图鉴模式 http://localhost:8090/codex.html
+cd dist && python3 -m http.server 8090 --bind 0.0.0.0
+```
+
+部署：`dist/` 是纯静态产物，直接托管到 GitHub Pages 即可（见 `.github/workflows/deploy-pages.yml`）。构建会渲染 `web/templates/board.html → dist/index.html` 与 `web/templates/codex.html → dist/codex.html`，并复制 `web/assets/`（含 `core/`、`game/`、`codex/`）与 `i18n/`。
