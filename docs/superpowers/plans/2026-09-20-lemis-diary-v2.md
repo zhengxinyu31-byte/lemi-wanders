@@ -2134,4 +2134,1253 @@ git commit -m "feat(collection): album with silhouette slots and city-level SSR 
 
 ---
 
-*(Task 12-16 待续写)*
+## Task 12: 地图封装
+
+**Files:**
+- Create: `web/assets/core/mapkit.js`
+- Test: `tests/js/mapkit.test.js`
+
+**Interfaces:**
+- Consumes: 无(MapLibre 实例由调用方注入)
+- Produces: `toLngLat([lat, lng])`、`needsPan(tileXY, viewport, marginRatio)`、`flyOptions(tile, reduced)`、`createCamera(map, opts)`(含 `moveTo(tile, isPoi)`)。Task 13 主循环、Task 15 图鉴消费。
+
+**镜头策略(spec 5.3):** 步行时镜头不动,仅当棋子进入视野边缘 15% 才 `panTo` 一次;**仅落 POI 格才 `flyTo` 俯冲**(pitch 50°)。`flyTo` 必须带 `essential: true`。
+
+- [ ] **Step 1: 写失败测试**
+
+Create `tests/js/mapkit.test.js`:
+
+```javascript
+const { test } = require("node:test");
+const assert = require("node:assert");
+const { toLngLat, needsPan, flyOptions } = require("../../web/assets/core/mapkit.js");
+
+test("toLngLat swaps stored lat,lng into MapLibre order", () => {
+  assert.deepStrictEqual(toLngLat([48.8584, 2.2945]), [2.2945, 48.8584]);
+});
+
+test("a point in the middle of the view needs no pan", () => {
+  const vp = { width: 1000, height: 800 };
+  assert.strictEqual(needsPan({ x: 500, y: 400 }, vp, 0.15), false);
+});
+
+test("a point inside the edge margin needs a pan", () => {
+  const vp = { width: 1000, height: 800 };
+  assert.strictEqual(needsPan({ x: 100, y: 400 }, vp, 0.15), true);  // 左边缘内
+  assert.strictEqual(needsPan({ x: 500, y: 60 }, vp, 0.15), true);   // 上边缘内
+});
+
+test("a point outside the viewport needs a pan", () => {
+  const vp = { width: 1000, height: 800 };
+  assert.strictEqual(needsPan({ x: -20, y: 400 }, vp, 0.15), true);
+});
+
+test("poi flight is a pitched cinematic move", () => {
+  const o = flyOptions({ lat: 48.86, lng: 2.29 }, false);
+  assert.deepStrictEqual(o.center, [2.29, 48.86]);
+  assert.strictEqual(o.pitch, 50);
+  assert.strictEqual(o.essential, true);   // 缺了它 reduced-motion 会跳过动画
+});
+
+test("reduced motion keeps essential but drops the pitch and duration", () => {
+  const o = flyOptions({ lat: 48.86, lng: 2.29 }, true);
+  assert.strictEqual(o.essential, true);
+  assert.strictEqual(o.pitch, 0);
+  assert.strictEqual(o.duration, 200);
+});
+```
+
+- [ ] **Step 2: 运行确认失败**
+
+Run: `node --test --test-concurrency=2 tests/js/mapkit.test.js`
+Expected: FAIL — 模块不存在
+
+- [ ] **Step 3: 实现**
+
+Create `web/assets/core/mapkit.js`:
+
+```javascript
+// MapLibre helpers.
+//
+// Camera policy, borrowed from storymap: during a walk the camera stays
+// put and only pans once the pawn reaches the edge of the view. Constant
+// camera motion is what makes map playback nauseating. A pitched flyTo is
+// reserved for arriving at a POI, where the move is the point.
+//
+// Coordinates are stored as [lat, lng] project-wide and only swapped here.
+
+var PITCH_ON_ARRIVAL = 50;
+var EDGE_MARGIN = 0.15;
+
+function toLngLat(latLng) {
+  return [latLng[1], latLng[0]];
+}
+
+function needsPan(point, viewport, marginRatio) {
+  var m = marginRatio === undefined ? EDGE_MARGIN : marginRatio;
+  var mx = viewport.width * m;
+  var my = viewport.height * m;
+  return point.x < mx || point.x > viewport.width - mx
+      || point.y < my || point.y > viewport.height - my;
+}
+
+function flyOptions(tile, reduced) {
+  // essential:true is required, or the OS "reduce motion" setting turns
+  // this into a jumpTo and the arrival moment disappears.
+  if (reduced) {
+    return { center: [tile.lng, tile.lat], zoom: 15, pitch: 0,
+             duration: 200, essential: true };
+  }
+  return { center: [tile.lng, tile.lat], zoom: 16,
+           pitch: PITCH_ON_ARRIVAL, bearing: -20,
+           speed: 0.8, curve: 1.2, essential: true };
+}
+
+function prefersReducedMotion() {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function createCamera(map, opts) {
+  var reduced = (opts && opts.reduced !== undefined)
+    ? opts.reduced : prefersReducedMotion();
+  return {
+    moveTo: function (tile, isPoi) {
+      if (isPoi) {
+        map.flyTo(flyOptions(tile, reduced));
+        return;
+      }
+      var p = map.project([tile.lng, tile.lat]);
+      var c = map.getContainer();
+      if (needsPan(p, { width: c.clientWidth, height: c.clientHeight })) {
+        map.panTo([tile.lng, tile.lat], { duration: reduced ? 200 : 600 });
+      }
+    },
+    reduced: reduced,
+  };
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { toLngLat: toLngLat, needsPan: needsPan,
+                     flyOptions: flyOptions, createCamera: createCamera };
+} else if (typeof window !== "undefined") {
+  window.LemiMap = { toLngLat: toLngLat, needsPan: needsPan,
+                     flyOptions: flyOptions, createCamera: createCamera };
+}
+```
+
+- [ ] **Step 4: 运行确认通过**
+
+Run: `node --test --test-concurrency=2 tests/js/mapkit.test.js`
+Expected: PASS(6 个用例)
+
+- [ ] **Step 5: 提交**
+
+```bash
+git add web/assets/core/mapkit.js tests/js/mapkit.test.js
+git commit -m "feat(mapkit): restrained camera - pan at edges, pitched flyTo only on arrival"
+```
+
+---
+
+## Task 13: 游戏主循环
+
+**Files:**
+- Create: `web/assets/game/game.js`
+- Test: `tests/js/game.test.js`
+
+**Interfaces:**
+- Consumes: Task 7 storage、Task 8 dice、Task 9 card、Task 10 tiles、Task 12 mapkit
+- Produces: `createGame(payload, storage, deps)`,含 `roll()`(async,返回本回合事件序列)、`state()`、`reset()`。Task 14 的页面脚本调用。
+
+**规则:** `roll()` 必须按 `path` 顺序逐格产出事件,POI 不得跳过;掉卡时经 storage 去重;走到末格标记 `finished`。
+
+- [ ] **Step 1: 写失败测试**
+
+Create `tests/js/game.test.js`:
+
+```javascript
+const { test } = require("node:test");
+const assert = require("node:assert");
+const { createGame } = require("../../web/assets/game/game.js");
+const { createStorage } = require("../../web/assets/core/storage.js");
+
+function mem() {
+  let s = {};
+  return { getItem: (k) => (k in s ? s[k] : null),
+           setItem: (k, v) => { s[k] = String(v); } };
+}
+
+const PAYLOAD = {
+  night_from_index: 3,
+  board: [
+    { index: 0, type: "poi", lat: 48.84, lng: 2.34, poi_id: "a" },
+    { index: 1, type: "street", lat: 48.845, lng: 2.345, content_id: "s1" },
+    { index: 2, type: "poi", lat: 48.85, lng: 2.35, poi_id: "b" },
+    { index: 3, type: "easter", lat: 48.855, lng: 2.355, content_id: "e1" },
+    { index: 4, type: "poi", lat: 48.86, lng: 2.36, poi_id: "c" },
+  ],
+  pois: { a: { id: "a" }, b: { id: "b" }, c: { id: "c" } },
+  cards: {
+    ca: { id: "ca", rarity: "R", poi_id: "a", title_zh: "A", title_en: "A",
+          body_zh: "x", body_en: "x" },
+    cb: { id: "cb", rarity: "R", poi_id: "b", title_zh: "B", title_en: "B",
+          body_zh: "x", body_en: "x" },
+    cc: { id: "cc", rarity: "R", poi_id: "c", title_zh: "C", title_en: "C",
+          body_zh: "x", body_en: "x" },
+    e1: { id: "e1", rarity: "SR", title_zh: "E", title_en: "E",
+          body_zh: "x", body_en: "x" },
+  },
+  street_cards: { s1: { id: "s1", category: "rule", text_zh: "街",
+                        text_en: "street" } },
+  chance: {},
+};
+
+function fakeDeps(rollValue) {
+  const moves = [];
+  return {
+    rng: () => (rollValue - 1) / 6 + 0.01,
+    camera: { moveTo: (tile, isPoi) => moves.push([tile.index, isPoi]) },
+    lang: "zh",
+    _moves: moves,
+  };
+}
+
+test("a roll of 2 from the start passes tile 1 and lands on tile 2", async () => {
+  const deps = fakeDeps(2);
+  const g = createGame(PAYLOAD, createStorage(mem()), deps);
+  const events = await g.roll();
+  assert.deepStrictEqual(events.map((e) => e.tileIndex), [1, 2]);
+});
+
+test("a POI passed mid-path still fires - the die never skips content", async () => {
+  const deps = fakeDeps(4);           // 0 -> 4,途经 1,2,3
+  const g = createGame(PAYLOAD, createStorage(mem()), deps);
+  const events = await g.roll();
+  const poiEvents = events.filter((e) => e.kind === "card" && e.content.rarity === "R");
+  assert.ok(poiEvents.some((e) => e.tileIndex === 2), "tile 2 POI must fire");
+  assert.strictEqual(events.length, 4);
+});
+
+test("landing on a POI marks the card as newly collected", async () => {
+  const g = createGame(PAYLOAD, createStorage(mem()), fakeDeps(2));
+  const events = await g.roll();
+  const card = events.find((e) => e.kind === "card");
+  assert.strictEqual(card.isNew, true);
+});
+
+test("replaying an owned card reports isNew false and count stays put", async () => {
+  const storage = createStorage(mem());
+  storage.addCard("cb");
+  const g = createGame(PAYLOAD, storage, fakeDeps(2));
+  const events = await g.roll();
+  const card = events.find((e) => e.kind === "card");
+  assert.strictEqual(card.isNew, false);
+  assert.strictEqual(storage.cardCount(), 1);
+});
+
+test("camera pitches only on POI tiles", async () => {
+  const deps = fakeDeps(2);
+  const g = createGame(PAYLOAD, createStorage(mem()), deps);
+  await g.roll();
+  assert.deepStrictEqual(deps._moves, [[1, false], [2, true]]);
+});
+
+test("crossing the night index flags the event", async () => {
+  const g = createGame(PAYLOAD, createStorage(mem()), fakeDeps(4));
+  const events = await g.roll();
+  assert.strictEqual(events.find((e) => e.tileIndex === 2).night, false);
+  assert.strictEqual(events.find((e) => e.tileIndex === 3).night, true);
+});
+
+test("reaching the last tile finishes the run", async () => {
+  const g = createGame(PAYLOAD, createStorage(mem()), fakeDeps(6));
+  const events = await g.roll();
+  assert.strictEqual(events[events.length - 1].finished, true);
+  assert.strictEqual(g.state().position, 4);
+});
+
+test("rolling after the run finished yields no events", async () => {
+  const g = createGame(PAYLOAD, createStorage(mem()), fakeDeps(6));
+  await g.roll();
+  assert.deepStrictEqual(await g.roll(), []);
+});
+
+test("position survives a reload through storage", async () => {
+  const backend = mem();
+  const g = createGame(PAYLOAD, createStorage(backend), fakeDeps(2));
+  await g.roll();
+  const g2 = createGame(PAYLOAD, createStorage(backend), fakeDeps(1));
+  assert.strictEqual(g2.state().position, 2);
+});
+```
+
+- [ ] **Step 2: 运行确认失败**
+
+Run: `node --test --test-concurrency=2 tests/js/game.test.js`
+Expected: FAIL — 模块不存在
+
+- [ ] **Step 3: 实现**
+
+Create `web/assets/game/game.js`:
+
+```javascript
+// Game loop. One roll produces an ordered list of events, one per tile
+// walked. Every tile on the path fires, including POIs passed in the
+// middle of a move — the die sets the pace, never the content.
+
+var STORYLINE_ID = "emily-in-paris";
+
+function _req(path, globalName, key) {
+  if (typeof require !== "undefined") return require(path)[key];
+  return window[globalName][key];
+}
+
+function createGame(payload, storage, deps) {
+  var rollDice = _req("./dice.js", "LemiDice", "rollDice");
+  var resolveMove = _req("./dice.js", "LemiDice", "resolveMove");
+  var resolveTile = _req("./tiles.js", "LemiTiles", "resolveTile");
+  var isNight = _req("./tiles.js", "LemiTiles", "isNight");
+
+  var board = payload.board || [];
+  var nightFrom = payload.night_from_index;
+  var lang = (deps && deps.lang) || "zh";
+  var camera = deps && deps.camera;
+  var rng = deps && deps.rng;
+
+  var saved = storage.load().storylines[STORYLINE_ID];
+  var position = saved ? saved.tile : 0;
+
+  function roll() {
+    var move = resolveMove(position, rollDice(rng), board.length);
+    var events = [];
+    move.path.forEach(function (idx) {
+      var tile = board[idx];
+      var resolved = resolveTile(tile, payload, lang);
+      if (camera) camera.moveTo(tile, tile.type === "poi");
+
+      var isNew = false;
+      if (resolved.kind === "card") {
+        isNew = storage.addCard(resolved.content.id);
+      }
+      events.push({
+        tileIndex: idx,
+        kind: resolved.kind,
+        durationMs: resolved.durationMs,
+        content: resolved.content,
+        isNew: isNew,
+        night: isNight(idx, nightFrom),
+        finished: idx === board.length - 1,
+      });
+    });
+    position = move.to;
+    storage.setTile(STORYLINE_ID, position);
+    return Promise.resolve(events);
+  }
+
+  return {
+    roll: roll,
+    state: function () {
+      return { position: position, finished: position >= board.length - 1,
+               night: isNight(position, nightFrom) };
+    },
+    reset: function () {
+      position = 0;
+      storage.setTile(STORYLINE_ID, 0);
+    },
+  };
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { createGame: createGame };
+} else if (typeof window !== "undefined") {
+  window.LemiGame = { createGame: createGame };
+}
+```
+
+- [ ] **Step 4: 运行确认通过**
+
+Run: `node --test --test-concurrency=2 tests/js/game.test.js`
+Expected: PASS(9 个用例)
+
+- [ ] **Step 5: 全量 JS 测试**
+
+Run: `node --test --test-concurrency=2 tests/js/`
+Expected: PASS(6 个测试文件全绿)
+
+- [ ] **Step 6: 提交**
+
+```bash
+git add web/assets/game/game.js tests/js/game.test.js
+git commit -m "feat(game): roll loop that fires every tile on the path"
+```
+
+---
+
+## Task 14: 游戏页面与样式
+
+**Files:**
+- Create: `web/templates/board.html`
+- Create: `web/assets/styles/base.css`
+- Create: `web/assets/styles/game.css`
+- Create: `web/assets/game/ui.js`
+- Modify: `pipeline/build_site.py`(渲染 board.html)
+- Test: `tests/test_frontend.py`
+
+**Interfaces:**
+- Consumes: Task 13 `createGame`;Task 11 `buildCollection`;Task 12 `createCamera`
+- Produces: 可运行的游戏页面。Task 16 验收。
+
+**动效时长(Global Constraints,必须精确):** 骰子按下 100ms + 翻滚 400ms;步行 ≤1000ms;掉卡 150/350/100ms;其他格 3000ms;reduced-motion 全部 200ms。
+
+**移动端(spec 第 11 节):** 竖屏地图 55%,骰子置右下拇指热区,卡片走底部抽屉上滑占满屏,触控目标 ≥44px。
+
+- [ ] **Step 1: 写失败测试**
+
+v1 的 `test_city_html_references_maplibre_and_app` 与 `test_app_js_defines_picklang_and_visible` 指向已被取代的 `city.html`/`app.js`,**先删除这两个用例**,再追加到 `tests/test_frontend.py`:
+    html = open(os.path.join(WEB, "templates", "board.html"), encoding="utf-8").read()
+    for mod in ("core/storage.js", "core/mapkit.js", "game/dice.js",
+                "game/card.js", "game/tiles.js", "game/collection.js",
+                "game/game.js", "game/ui.js"):
+        assert mod in html, f"board.html must load {mod}"
+    assert "maplibre-gl" in html
+    assert "{{CITY_ID}}" in html
+
+
+def test_game_css_has_mobile_layout_and_touch_targets():
+    css = open(os.path.join(WEB, "assets", "styles", "game.css"),
+               encoding="utf-8").read()
+    assert "@media" in css, "mobile-first is a hard requirement"
+    assert "44px" in css, "touch targets must be at least 44px"
+
+
+def test_game_css_honours_reduced_motion():
+    css = open(os.path.join(WEB, "assets", "styles", "game.css"),
+               encoding="utf-8").read()
+    assert "prefers-reduced-motion" in css
+
+
+def test_animation_durations_match_the_spec():
+    css = open(os.path.join(WEB, "assets", "styles", "game.css"),
+               encoding="utf-8").read()
+    for ms in ("100ms", "400ms", "150ms", "350ms"):
+        assert ms in css, f"spec timing {ms} missing from game.css"
+```
+
+- [ ] **Step 2: 运行确认失败**
+
+Run: `python -m pytest tests/test_frontend.py -v -k "board_html or game_css or animation_durations"`
+Expected: FAIL — `FileNotFoundError: web/templates/board.html`
+
+- [ ] **Step 3: 写 base.css**
+
+Create `web/assets/styles/base.css`:
+
+```css
+/* Design tokens shared by both modes. */
+:root {
+  --paper: #faf7f2;
+  --ink: #2b2723;
+  --accent: #c0392b;
+  --gold: #c9a227;
+  --line: #e8e0d6;
+  --night: #14203a;
+  --radius: 10px;
+  --touch: 44px;                 /* minimum touch target */
+  --t-press: 100ms;
+  --t-dice: 400ms;
+  --t-walk: 1000ms;
+  --t-card-out: 150ms;
+  --t-card-develop: 350ms;
+  --t-card-set: 100ms;
+  --t-info: 3000ms;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Noto Sans SC", "PingFang SC", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.serif { font-family: "Noto Serif SC", "Songti SC", serif; }
+/* Handwriting is reserved for sourced quotes only. */
+.handwriting { font-family: "Ma Shan Zheng", "Kaiti SC", cursive; }
+
+button {
+  min-height: var(--touch);
+  min-width: var(--touch);
+  border: 0;
+  border-radius: var(--radius);
+  font: inherit;
+  cursor: pointer;
+}
+```
+
+- [ ] **Step 4: 写 game.css**
+
+Create `web/assets/styles/game.css`:
+
+```css
+/* Game mode. Mobile-first: the phone layout is the default, the desktop
+   split is the override. Two of the three target scenarios are phones. */
+
+#game {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+#map { flex: 0 0 55%; }
+
+#controls {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+#daypart {
+  font-size: 14px;
+  letter-spacing: .05em;
+}
+
+#dice {
+  width: 72px; height: 72px;          /* well past the 44px minimum */
+  margin-left: auto;                   /* right-hand thumb zone */
+  background: var(--accent);
+  color: #fff;
+  font-size: 28px; font-weight: 700;
+}
+#dice:active { transform: translateY(2px); transition: transform var(--t-press); }
+#dice.rolling { animation: dice-roll var(--t-dice) cubic-bezier(.34,1.56,.64,1); }
+
+@keyframes dice-roll {
+  0%   { transform: rotateX(0) rotateY(0); }
+  70%  { transform: rotateX(540deg) rotateY(360deg); }
+  100% { transform: rotateX(720deg) rotateY(360deg); }
+}
+
+/* Pawn: Lemi walking with her backpack. */
+#pawn { width: 36px; height: 36px; transition: transform var(--t-walk) linear; }
+
+/* Card: a Polaroid developing. The blur-to-sharp reveal IS the suspense. */
+.card {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  max-height: 88dvh; overflow-y: auto;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 18px;
+  animation: card-out var(--t-card-out) ease-out;
+}
+.card img { width: 100%; border-radius: 8px; animation: develop var(--t-card-develop) ease-out; }
+.card.set { animation: card-set var(--t-card-set) ease-out; }
+
+@keyframes card-out { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes develop {
+  from { filter: blur(8px) saturate(0) brightness(1.4); }
+  to   { filter: none; }
+}
+@keyframes card-set { 50% { transform: scale(1.02); } }
+
+.card-r   { border: 2px solid var(--line); }
+.card-sr  { border: 2px solid var(--gold); box-shadow: 0 0 18px rgba(201,162,39,.45); }
+.card-ssr { border: 2px solid transparent;
+            background-image: linear-gradient(#fff,#fff),
+                              linear-gradient(90deg,#f0a,#0af,#af0,#f0a);
+            background-origin: border-box; background-clip: padding-box, border-box; }
+
+.card .quote { margin-top: 14px; font-size: 18px; }
+.card .source { font-size: 12px; color: #888; }
+
+/* Album: unowned cards stay visible as silhouettes so the gap is legible. */
+#album { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.slot { aspect-ratio: 3/4; border-radius: var(--radius); }
+.slot.locked { background: #ddd6cc; color: #a89e92;
+               display: flex; align-items: center; justify-content: center; }
+.slot.locked::after { content: "?"; font-size: 32px; }
+
+#toast {
+  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%);
+  background: rgba(0,0,0,.82); color: #fff;
+  padding: 10px 18px; border-radius: 20px;
+  opacity: 0; transition: opacity 200ms;
+}
+#toast.show { opacity: 1; }
+
+/* Night: one switch, not a gradient. "It got dark" is itself the event. */
+body.night { background: var(--night); color: #e8eef8; }
+
+@media (min-width: 860px) {
+  #game { flex-direction: row; }
+  #map { flex: 1; height: 100dvh; }
+  #controls { flex: 0 0 380px; flex-direction: column; align-items: stretch; }
+  .card { position: static; max-height: none; border-radius: var(--radius); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #dice.rolling, .card, .card img, .card.set { animation: none; }
+  #pawn { transition: none; }
+  .card { animation: fade 200ms ease-out; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+}
+```
+
+- [ ] **Step 5: 写 board.html**
+
+Create `web/templates/board.html`:
+
+```html
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Lemi's Diary</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<link href="./assets/styles/base.css" rel="stylesheet" />
+<link href="./assets/styles/game.css" rel="stylesheet" />
+</head>
+<body>
+<div id="game">
+  <div id="map"></div>
+  <div id="controls">
+    <span id="daypart">☀️ 白天</span>
+    <button id="album-btn" type="button">🗂️ <span id="album-count">0/10</span></button>
+    <button id="dice" type="button" aria-label="摇骰子">🎲</button>
+  </div>
+</div>
+<div id="card-host" aria-live="polite"></div>
+<div id="toast" role="status"></div>
+
+<script>window.__CITY_ID__ = "{{CITY_ID}}";</script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="./assets/core/storage.js"></script>
+<script src="./assets/core/mapkit.js"></script>
+<script src="./assets/game/dice.js"></script>
+<script src="./assets/game/card.js"></script>
+<script src="./assets/game/tiles.js"></script>
+<script src="./assets/game/collection.js"></script>
+<script src="./assets/game/game.js"></script>
+<script src="./assets/game/ui.js"></script>
+</body>
+</html>
+```
+
+- [ ] **Step 6: 写 ui.js**
+
+Create `web/assets/game/ui.js`(编排 DOM;纯逻辑已在前面任务测过):
+
+```javascript
+// Page wiring for game mode: boot the map, bind the die, render cards.
+// All decision logic lives in the tested modules; this file only moves DOM.
+
+(function () {
+  if (typeof window === "undefined" || !document.getElementById) return;
+
+  var T = { press: 100, dice: 400, walk: 1000, cardOut: 150,
+            develop: 350, set: 100, info: 3000 };
+
+  function reduced() {
+    return window.matchMedia
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function toast(msg) {
+    var el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(function () { el.classList.remove("show"); }, 1600);
+  }
+
+  function renderCard(card, host, onClose) {
+    var box = document.createElement("div");
+    box.className = "card " + window.LemiCard.rarityClass(card.rarity);
+    var html = "";
+    if (card.hasImage) {
+      html += '<img src="' + card.image.thumb + '" alt="" '
+            + 'onerror="this.style.display=\'none\'" />';
+    }
+    html += "<h3>" + card.title + "</h3>";
+    html += '<p class="serif">' + card.body + "</p>";
+    if (card.quote) {
+      html += '<p class="quote handwriting">「' + card.quote.text + "」</p>";
+      html += '<p class="source">' + card.quote.source + "</p>";
+    }
+    box.innerHTML = html;
+    // Any click anywhere collects the card — no extra button to aim at.
+    box.addEventListener("click", function () { box.remove(); onClose(); });
+    host.appendChild(box);
+    if (!reduced()) {
+      setTimeout(function () { box.classList.add("set"); }, T.develop);
+    }
+  }
+
+  function renderInfo(title, text, host) {
+    var box = document.createElement("div");
+    box.className = "card card-r";
+    box.innerHTML = "<h3>" + title + '</h3><p class="serif">' + text + "</p>";
+    host.appendChild(box);
+    setTimeout(function () { box.remove(); }, reduced() ? 200 : T.info);
+  }
+
+  async function boot() {
+    var cityId = window.__CITY_ID__ || "paris";
+    var lang = localStorage.getItem("lemi_lang") || "zh";
+    var payload = await fetch("./data/" + cityId + ".json").then(function (r) {
+      return r.json();
+    });
+
+    var map = new maplibregl.Map({
+      container: "map",
+      style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+      center: [payload.city.center_lng, payload.city.center_lat],
+      zoom: 13,
+    });
+
+    var storage = window.LemiStorage.createStorage(window.localStorage);
+    var camera = window.LemiMap.createCamera(map);
+    var game = window.LemiGame.createGame(payload, storage,
+                                          { camera: camera, lang: lang });
+    var host = document.getElementById("card-host");
+
+    function refreshAlbum() {
+      var c = window.LemiCollection.buildCollection(payload, storage, lang);
+      document.getElementById("album-count").textContent =
+        c.owned + "/" + c.total;
+    }
+
+    function setDaypart(night) {
+      document.body.classList.toggle("night", night);
+      document.getElementById("daypart").textContent = night ? "🌃 夜晚" : "☀️ 白天";
+    }
+
+    async function playEvents(events) {
+      for (var i = 0; i < events.length; i++) {
+        var e = events[i];
+        setDaypart(e.night);
+        if (e.kind === "card") {
+          await new Promise(function (done) {
+            renderCard(e.content, host, function () {
+              if (e.isNew) { refreshAlbum(); toast("已收入卡册"); }
+              done();
+            });
+          });
+        } else if (e.kind === "street") {
+          renderInfo("🗺️", e.content.text, host);
+          await new Promise(function (r) { setTimeout(r, reduced() ? 200 : T.info); });
+        } else if (e.kind === "chance") {
+          renderInfo("🎴", e.content.question + "<br><b>"
+                     + e.content.options[e.content.answerIndex] + "</b><br>"
+                     + e.content.explain, host);
+          await new Promise(function (r) { setTimeout(r, reduced() ? 200 : T.info); });
+        } else if (e.kind === "photo") {
+          renderInfo("📸", e.content.name, host);
+          await new Promise(function (r) { setTimeout(r, reduced() ? 200 : T.info); });
+        }
+      }
+    }
+
+    var dice = document.getElementById("dice");
+    dice.addEventListener("click", async function () {
+      if (dice.disabled) return;
+      dice.disabled = true;
+      dice.classList.add("rolling");
+      await new Promise(function (r) { setTimeout(r, reduced() ? 0 : T.dice); });
+      dice.classList.remove("rolling");
+      await playEvents(await game.roll());
+      dice.disabled = false;
+    });
+
+    map.on("load", function () {
+      refreshAlbum();
+      setDaypart(game.state().night);
+    });
+  }
+
+  window.addEventListener("DOMContentLoaded", boot);
+})();
+```
+
+- [ ] **Step 7: 让 build_site 渲染 board.html**
+
+修改 `pipeline/build_site.py` 的 `write_site`,把模板文件名改为 `board.html`,并复制 `assets` 下的子目录(`shutil.copytree` 的 `dirs_exist_ok=True` 已递归,无需改动):
+
+```python
+    tpl_path = os.path.join(web_dir, "templates", "board.html")
+```
+
+- [ ] **Step 8: 运行确认通过**
+
+Run: `python -m pytest tests/test_frontend.py -v`
+Expected: PASS
+
+- [ ] **Step 9: 构建并人工确认**
+
+Run: `LEMI_OFFLINE=1 python -m pipeline.run_paris && ls dist/assets/core dist/assets/game`
+Expected: 两个目录下各有对应 .js 文件
+
+- [ ] **Step 10: 删除被取代的 v1 前端**
+
+`web/templates/city.html` 与 `web/assets/app.js` 已被 board.html + 模块化脚本取代,留着会被复制进 dist 成为死代码:
+
+```bash
+git rm web/templates/city.html web/assets/app.js
+```
+
+Run: `python -m pytest tests/ -q`
+Expected: PASS(确认没有别处还引用它们)
+
+- [ ] **Step 11: 提交**
+
+```bash
+git add web/templates/board.html web/assets/styles web/assets/game/ui.js \
+        pipeline/build_site.py tests/test_frontend.py
+git commit -m "feat(ui): game page with mobile-first layout and spec-exact timings"
+```
+
+---
+
+## Task 15: 图鉴模式
+
+**Files:**
+- Create: `web/templates/codex.html`
+- Create: `web/assets/codex/codex.js`
+- Create: `web/assets/styles/codex.css`
+- Modify: `pipeline/build_site.py`(额外渲染 codex.html)
+- Test: `tests/js/codex.test.js`、`tests/test_frontend.py`
+
+**Interfaces:**
+- Consumes: payload 的 `storylines`/`pois`;Task 12 `flyOptions`
+- Produces: `buildChapters(payload, lang)`、`hashForStop(n)`、`stopFromHash(hash)`
+
+**约束(spec 第 9 节 + Global Constraints):** 本模式**不读写 localStorage**(`lemi_lang` 除外),不显示任何进度或集卡角标;CSS **禁用 vh**;移动端地图顶部 40% sticky。
+
+- [ ] **Step 1: 写失败测试**
+
+Create `tests/js/codex.test.js`:
+
+```javascript
+const { test } = require("node:test");
+const assert = require("node:assert");
+const { buildChapters, hashForStop, stopFromHash } =
+  require("../../web/assets/codex/codex.js");
+
+const PAYLOAD = {
+  night_from_index: 13,
+  pois: {
+    a: { id: "a", name_zh: "甲", name_en: "A", lat: 1, lng: 2, base_images: [] },
+    b: { id: "b", name_zh: "乙", name_en: "B", lat: 3, lng: 4, base_images: [] },
+  },
+  storylines: [{
+    id: "sl", title_zh: "线", title_en: "Line",
+    stops: [
+      { poi_id: "a", order: 1, narrative: [
+        { type: "scene", text_zh: "场景", text_en: "scene" }] },
+      { poi_id: "b", order: 2, narrative: [
+        { type: "history", text_zh: "历史", text_en: "history" }] },
+    ],
+  }],
+};
+
+test("chapters follow stop order", () => {
+  const ch = buildChapters(PAYLOAD, "zh");
+  assert.deepStrictEqual(ch.map((c) => c.title), ["甲", "乙"]);
+});
+
+test("chapters carry coordinates for the camera", () => {
+  assert.deepStrictEqual(buildChapters(PAYLOAD, "zh")[0].center, [2, 1]);
+});
+
+test("chapters switch language", () => {
+  assert.strictEqual(buildChapters(PAYLOAD, "en")[0].title, "A");
+  assert.strictEqual(buildChapters(PAYLOAD, "en")[0].blocks[0].text, "scene");
+});
+
+test("hash round-trips a stop number", () => {
+  assert.strictEqual(hashForStop(3), "#stop=3");
+  assert.strictEqual(stopFromHash("#stop=3"), 3);
+});
+
+test("a malformed hash yields the first stop", () => {
+  assert.strictEqual(stopFromHash("#nonsense"), 1);
+  assert.strictEqual(stopFromHash(""), 1);
+  assert.strictEqual(stopFromHash("#stop=abc"), 1);
+});
+
+test("codex never reads player state", () => {
+  const src = require("fs").readFileSync(
+    require("path").join(__dirname, "../../web/assets/codex/codex.js"), "utf8");
+  assert.ok(!/lemi_state/.test(src), "codex must not touch player state");
+  assert.ok(!/hasCard|cardCount|addCard/.test(src),
+            "codex must not read the album");
+});
+```
+
+- [ ] **Step 2: 运行确认失败**
+
+Run: `node --test --test-concurrency=2 tests/js/codex.test.js`
+Expected: FAIL — 模块不存在
+
+- [ ] **Step 3: 实现 codex.js**
+
+Create `web/assets/codex/codex.js`:
+
+```javascript
+// Codex mode: a read-only scrollytelling view of a storyline.
+//
+// This mode deliberately knows nothing about the player: no cards, no
+// progress, no localStorage beyond the shared language preference. It
+// serves the reader who just wants the material.
+
+function pick(zh, en, lang) {
+  if (lang === "en") return en || zh || "";
+  return zh || en || "";
+}
+
+function buildChapters(payload, lang) {
+  var sl = (payload.storylines || [])[0];
+  if (!sl) return [];
+  var stops = (sl.stops || []).slice().sort(function (a, b) {
+    return a.order - b.order;
+  });
+  return stops.map(function (st) {
+    var poi = (payload.pois || {})[st.poi_id] || {};
+    return {
+      order: st.order,
+      poiId: st.poi_id,
+      title: pick(poi.name_zh, poi.name_en, lang),
+      center: [poi.lng, poi.lat],
+      image: (poi.base_images || [])[0] || null,
+      night: st.order - 1 >= (payload.night_from_index || 99),
+      blocks: (st.narrative || []).map(function (n) {
+        return { type: n.type, text: pick(n.text_zh, n.text_en, lang) };
+      }),
+    };
+  });
+}
+
+function hashForStop(n) { return "#stop=" + n; }
+
+function stopFromHash(hash) {
+  var m = /^#stop=(\d+)$/.exec(hash || "");
+  return m ? parseInt(m[1], 10) : 1;
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { buildChapters: buildChapters, hashForStop: hashForStop,
+                     stopFromHash: stopFromHash };
+} else if (typeof window !== "undefined") {
+  window.LemiCodex = { buildChapters: buildChapters, hashForStop: hashForStop,
+                       stopFromHash: stopFromHash };
+}
+```
+
+- [ ] **Step 4: 运行确认通过**
+
+Run: `node --test --test-concurrency=2 tests/js/codex.test.js`
+Expected: PASS(6 个用例)
+
+- [ ] **Step 5: 写 codex.css**
+
+Create `web/assets/styles/codex.css`:
+
+```css
+/* Codex mode. Scrollama drives the camera from scroll position.
+   Note: no vh units anywhere — scrolling changes vh on mobile and would
+   retrigger resize handlers. dvh/percentages only. */
+
+#codex { display: flex; flex-direction: column; }
+
+#codex-map {
+  position: sticky; top: 0;
+  height: 40dvh;
+  z-index: 1;
+}
+
+#chapters { padding: 24px 18px 60dvh; }
+
+.chapter {
+  min-height: 70dvh;
+  padding: 24px 0;
+  opacity: .35;
+  transition: opacity 300ms;
+}
+.chapter.active { opacity: 1; }
+.chapter img { width: 100%; border-radius: 10px; }
+.chapter h2 { font-size: 22px; }
+.chapter p { line-height: 1.75; }
+
+@media (min-width: 860px) {
+  #codex { flex-direction: row-reverse; }
+  #codex-map { flex: 1; height: 100dvh; }
+  #chapters { flex: 0 0 420px; padding: 40px 28px 60dvh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chapter { transition: none; }
+}
+```
+
+- [ ] **Step 6: 写 codex.html**
+
+Create `web/templates/codex.html`:
+
+```html
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Lemi's Diary · 图鉴</title>
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<link href="./assets/styles/base.css" rel="stylesheet" />
+<link href="./assets/styles/codex.css" rel="stylesheet" />
+</head>
+<body>
+<div id="codex">
+  <div id="codex-map"></div>
+  <div id="chapters"></div>
+</div>
+<a id="to-game" href="./index.html">🎲 玩游戏</a>
+
+<script>window.__CITY_ID__ = "{{CITY_ID}}";</script>
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/scrollama"></script>
+<script src="./assets/core/mapkit.js"></script>
+<script src="./assets/codex/codex.js"></script>
+<script>
+(function () {
+  async function boot() {
+    var cityId = window.__CITY_ID__ || "paris";
+    var lang = localStorage.getItem("lemi_lang") || "zh";
+    var payload = await fetch("./data/" + cityId + ".json")
+      .then(function (r) { return r.json(); });
+
+    var chapters = window.LemiCodex.buildChapters(payload, lang);
+    var host = document.getElementById("chapters");
+    chapters.forEach(function (c) {
+      var sec = document.createElement("section");
+      sec.className = "chapter";
+      sec.dataset.stop = c.order;
+      var html = "<h2>" + c.order + ". " + c.title + "</h2>";
+      if (c.image) html += '<img src="' + c.image.thumb + '" alt="" />';
+      c.blocks.forEach(function (b) { html += '<p class="serif">' + b.text + "</p>"; });
+      sec.innerHTML = html;
+      host.appendChild(sec);
+    });
+
+    var map = new maplibregl.Map({
+      container: "codex-map",
+      style: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
+      center: chapters.length ? chapters[0].center
+                              : [payload.city.center_lng, payload.city.center_lat],
+      zoom: 14,
+    });
+
+    var reduced = window.matchMedia
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    scrollama().setup({ step: ".chapter", offset: "300px" })
+      .onStepEnter(function (res) {
+        document.querySelectorAll(".chapter").forEach(function (el) {
+          el.classList.remove("active");
+        });
+        res.element.classList.add("active");
+        var c = chapters[res.index];
+        map.flyTo({ center: c.center, zoom: 16, pitch: reduced ? 0 : 45,
+                    duration: reduced ? 200 : 1200, essential: true });
+        history.replaceState(null, "", window.LemiCodex.hashForStop(c.order));
+      });
+
+    var target = window.LemiCodex.stopFromHash(location.hash);
+    var el = document.querySelector('.chapter[data-stop="' + target + '"]');
+    if (el) el.scrollIntoView();
+  }
+  window.addEventListener("DOMContentLoaded", boot);
+})();
+</script>
+</body>
+</html>
+```
+
+- [ ] **Step 7: 让 build_site 同时输出 codex.html**
+
+在 `write_site` 末尾追加:
+
+```python
+    codex_tpl = os.path.join(web_dir, "templates", "codex.html")
+    if os.path.isfile(codex_tpl):
+        with open(codex_tpl, "r", encoding="utf-8") as f:
+            codex_html = f.read().replace("{{CITY_ID}}", city_id)
+        with open(os.path.join(dist_dir, "codex.html"), "w", encoding="utf-8") as f:
+            f.write(codex_html)
+```
+
+并在 `board.html` 的 controls 里加一个入口:
+
+```html
+    <a id="to-codex" href="./codex.html">📖 图鉴</a>
+```
+
+- [ ] **Step 8: 加前端测试**
+
+追加到 `tests/test_frontend.py`:
+
+```python
+def test_codex_css_avoids_vh_units():
+    css = open(os.path.join(WEB, "assets", "styles", "codex.css"),
+               encoding="utf-8").read()
+    import re
+    # dvh is fine; bare vh retriggers resize while scrolling on mobile
+    assert not re.search(r"\d+vh\b", css), "codex.css must not use vh units"
+
+
+def test_codex_html_loads_scrollama():
+    html = open(os.path.join(WEB, "templates", "codex.html"),
+                encoding="utf-8").read()
+    assert "scrollama" in html
+    assert "essential" in html, "flyTo must pass essential:true"
+```
+
+- [ ] **Step 9: 运行全部测试**
+
+Run: `python -m pytest tests/ -q && node --test --test-concurrency=2 tests/js/`
+Expected: 两者均 PASS
+
+- [ ] **Step 10: 提交**
+
+```bash
+git add web/templates/codex.html web/assets/codex web/assets/styles/codex.css \
+        pipeline/build_site.py tests/js/codex.test.js tests/test_frontend.py
+git commit -m "feat(codex): read-only scrollytelling mode decoupled from player state"
+```
+
+---
+
+## Task 16: 端到端验收与文档
+
+**Files:**
+- Modify: `README.md`
+- Modify: `tests/test_e2e_paris.py`
+
+**Interfaces:**
+- Consumes: 全部前序任务
+- Produces: 可部署的 dist/ 与更新后的文档
+
+- [ ] **Step 1: 写端到端测试**
+
+追加到 `tests/test_e2e_paris.py`:
+
+```python
+def test_built_payload_has_playable_board(tmp_path):
+    import json
+    import os
+    import subprocess
+    env = dict(os.environ, LEMI_OFFLINE="1")
+    subprocess.run(["python", "-m", "pipeline.run_paris"], check=True, env=env)
+    d = json.load(open("dist/data/paris.json", encoding="utf-8"))
+
+    assert len(d["board"]) == 20
+    assert d["board"][0]["type"] == "poi"
+    assert d["board"][-1]["type"] == "poi"
+    assert d["night_from_index"] == 13
+
+    # 每个非 POI 格都必须挂到真实内容上,否则玩家会走到空格子
+    pools = {"street": d["street_cards"], "chance": d["chance"],
+             "easter": d["cards"]}
+    for tile in d["board"]:
+        if tile["type"] in pools:
+            assert tile.get("content_id") in pools[tile["type"]], (
+                f"tile {tile['index']} ({tile['type']}) points at missing content")
+
+    assert len(d["cards"]) == 10
+    assert len([c for c in d["cards"].values() if c["rarity"] == "R"]) == 7
+    assert len(d["street_cards"]) == 5
+
+
+def test_dist_has_both_mode_pages():
+    import os
+    assert os.path.isfile("dist/index.html")
+    assert os.path.isfile("dist/codex.html")
+    for mod in ("core/storage.js", "core/mapkit.js", "game/game.js",
+                "codex/codex.js"):
+        assert os.path.isfile(os.path.join("dist", "assets", mod)), mod
+```
+
+- [ ] **Step 2: 运行确认**
+
+Run: `python -m pytest tests/test_e2e_paris.py -v`
+Expected: PASS
+
+- [ ] **Step 3: 全量测试**
+
+Run: `python -m pytest tests/ -q && node --test --test-concurrency=2 tests/js/`
+Expected: 全绿
+
+- [ ] **Step 4: 手动验收清单**
+
+起本地服务 `cd dist && python3 -m http.server 8090 --bind 0.0.0.0`,逐项确认:
+
+- [ ] 摇骰子:按下有下沉反馈,翻滚约 0.4 秒后出点数
+- [ ] Lemi 背包步行,1 秒内走完;走路时镜头不跟
+- [ ] 落 POI 格:镜头俯冲(可见倾斜),拍立得从底部吐出并由模糊显影为清晰
+- [ ] 点卡片任意位置 → 卡片消失 + toast「已收入卡册」
+- [ ] 卡册计数递增;打开卡册可见未获得卡的剪影 `?` 占位
+- [ ] 同一张卡再次掉落时计数不变
+- [ ] 走过第 13 格后切夜景,铁塔格可见
+- [ ] 手机尺寸(375×812)下:地图占上方 55%,骰子在右下拇指区,卡片上滑占满屏
+- [ ] 开启系统「减弱动态效果」后重载:动效消失但流程可走完
+- [ ] 图鉴模式:滚动驱动地图飞行;URL 出现 `#stop=N`;刷新后回到该站
+- [ ] 图鉴模式不显示任何集卡进度
+
+- [ ] **Step 5: 更新 README**
+
+在 `README.md` 增补 v2 章节:玩法说明、两种模式入口、`content/` 各目录职责、`VERIFIED_CONTENT.md` 的作用与新增内容时的验证要求(交叉验证 ≥2 源 + 对抗审查 + 措辞不说绝)、本地预览与部署命令。
+
+- [ ] **Step 6: 提交**
+
+```bash
+git add README.md tests/test_e2e_paris.py
+git commit -m "test(e2e): assert a playable board and both mode pages ship"
+```
+
+---
+
+## 自审记录
+
+**Spec 覆盖检查**
+
+| Spec 章节 | 对应任务 |
+|---|---|
+| 3.1 骰子不跳过 POI | Task 8(`resolveMove` 返回完整 path)、Task 13(逐格触发测试) |
+| 3.2 棋盘 20 格构成 | Task 3(生成器)、Task 5(filler_plan)、Task 16(e2e 断言) |
+| 3.3 白天/夜晚第 13 格切换 | Task 10 `isNight`、Task 13 事件 `night`、Task 14 `body.night` |
+| 4 卡池 R/SR/SSR | Task 5(内容)、Task 11(卡册分母 10、SSR 锁定) |
+| 5.2 动效时长 | Task 14(CSS 变量 + 测试断言精确毫秒值) |
+| 5.3 镜头策略 | Task 12(`needsPan`/`flyOptions`)、Task 13(仅 POI 传 isPoi=true) |
+| 5.4 卡面与收卡 | Task 9(整形)、Task 14(点任意处收卡 + toast) |
+| 5.5 其他格 3 秒 | Task 10(`DURATIONS.info=3000`) |
+| 6 内容真实性 gate | Task 2(verify.py)、Task 5(内容取自 VERIFIED_CONTENT.md) |
+| 7 数据模型 | Task 1 |
+| 8 卡册剪影占位 | Task 11 |
+| 9 图鉴模式 | Task 15 |
+| 10 localStorage | Task 7 |
+| 11 移动端 | Task 14(mobile-first CSS + 测试) |
+| 12 无障碍降级 | Task 12(essential)、Task 14(reduced-motion CSS) |
+
+**Review Focus 落点**
+
+| 风险 | 测试所在 |
+|---|---|
+| localStorage 不可用 | Task 7「game still works when localStorage throws」 |
+| 版本迁移不丢卡 | Task 7「migrate keeps collected cards」 |
+| 骰子越界 | Task 8「move stops at the last tile when the roll overshoots」 |
+| 重复收卡不重复计数 | Task 7「addCard is idempotent」、Task 13「replaying an owned card」 |
+| 图片缺失仍可读 | Task 9「card without an image is still readable」 |
+
+**类型一致性**:`createStorage`/`resolveMove`/`resolveTile`/`shapeCard`/`buildCollection`/`createCamera`/`createGame` 在定义任务与消费任务中签名一致,已逐一核对。
