@@ -1,0 +1,108 @@
+/* Game mode. Mobile-first: the phone layout is the default, the desktop
+   split is the override. Two of the three target scenarios are phones. */
+
+/* Spec-exact animation timings (tokens defined in base.css):
+   press 100ms, dice roll 400ms, walk 1000ms, card-out 150ms,
+   develop 350ms, card-set 100ms, info 3000ms; reduced-motion 200ms. */
+
+#game {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+#map { flex: 0 0 55%; }
+
+#controls {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  gap: 12px;
+}
+
+#daypart {
+  font-size: 14px;
+  letter-spacing: .05em;
+}
+
+#dice {
+  width: 72px; height: 72px;          /* well past the 44px minimum */
+  margin-left: auto;                   /* right-hand thumb zone */
+  background: var(--accent);
+  color: #fff;
+  font-size: 28px; font-weight: 700;
+}
+#dice:active { transform: translateY(2px); transition: transform var(--t-press); }
+#dice.rolling { animation: dice-roll var(--t-dice) cubic-bezier(.34,1.56,.64,1); }
+
+@keyframes dice-roll {
+  0%   { transform: rotateX(0) rotateY(0); }
+  70%  { transform: rotateX(540deg) rotateY(360deg); }
+  100% { transform: rotateX(720deg) rotateY(360deg); }
+}
+
+/* Pawn: Lemi walking with her backpack. */
+#pawn { width: 36px; height: 36px; transition: transform var(--t-walk) linear; }
+
+/* Card: a Polaroid developing. The blur-to-sharp reveal IS the suspense. */
+.card {
+  position: fixed; left: 0; right: 0; bottom: 0;
+  max-height: 88dvh; overflow-y: auto;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  padding: 18px;
+  animation: card-out var(--t-card-out) ease-out;
+}
+.card img { width: 100%; border-radius: 8px; animation: develop var(--t-card-develop) ease-out; }
+.card.set { animation: card-set var(--t-card-set) ease-out; }
+
+@keyframes card-out { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes develop {
+  from { filter: blur(8px) saturate(0) brightness(1.4); }
+  to   { filter: none; }
+}
+@keyframes card-set { 50% { transform: scale(1.02); } }
+
+.card-r   { border: 2px solid var(--line); }
+.card-sr  { border: 2px solid var(--gold); box-shadow: 0 0 18px rgba(201,162,39,.45); }
+.card-ssr { border: 2px solid transparent;
+            background-image: linear-gradient(#fff,#fff),
+                              linear-gradient(90deg,#f0a,#0af,#af0,#f0a);
+            background-origin: border-box; background-clip: padding-box, border-box; }
+
+.card .quote { margin-top: 14px; font-size: 18px; }
+.card .source { font-size: 12px; color: #888; }
+
+/* Album: unowned cards stay visible as silhouettes so the gap is legible. */
+#album { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.slot { aspect-ratio: 3/4; border-radius: var(--radius); }
+.slot.locked { background: #ddd6cc; color: #a89e92;
+               display: flex; align-items: center; justify-content: center; }
+.slot.locked::after { content: "?"; font-size: 32px; }
+
+#toast {
+  position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%);
+  background: rgba(0,0,0,.82); color: #fff;
+  padding: 10px 18px; border-radius: 20px;
+  opacity: 0; transition: opacity 200ms;
+}
+#toast.show { opacity: 1; }
+
+/* Night: one switch, not a gradient. "It got dark" is itself the event. */
+body.night { background: var(--night); color: #e8eef8; }
+
+@media (min-width: 860px) {
+  #game { flex-direction: row; }
+  #map { flex: 1; height: 100dvh; }
+  #controls { flex: 0 0 380px; flex-direction: column; align-items: stretch; }
+  .card { position: static; max-height: none; border-radius: var(--radius); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #dice.rolling, .card, .card img, .card.set { animation: none; }
+  #pawn { transition: none; }
+  .card { animation: fade 200ms ease-out; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+}

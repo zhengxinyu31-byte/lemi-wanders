@@ -62,7 +62,7 @@ dist/        # 产物层:构建输出的纯静态站(可直接部署,已被 .git
 
 - `content/` —— 所有内容以 JSON 存放：`cities/`（城市与地图配置）、`pois/`（共享地点）、`storylines/`（故事线）。
 - `pipeline/` —— `models.py`（数据模型）、`geocode.py`（地理编码）、`images.py`（Wikimedia 配图与降级链）、`content_gen.py`（LLM 双语叙事生成）、`build_site.py`（组装城市 payload + 渲染静态站）、`run_paris.py`（端到端构建入口）。
-- `web/` —— `templates/city.html`（城市页模板）、`assets/app.js`（MapLibre 地图 + 语言/故事线切换）、`i18n/`（界面文案）。
+- `web/` —— `templates/board.html`（游戏页模板）、`assets/core/`（storage、mapkit 基础封装）、`assets/game/`（骰子、卡片、格子、卡册、主循环、页面编排）、`assets/styles/`（base.css + game.css）、`i18n/`（界面文案）。
 - `dist/` —— 构建产物（`index.html` + `data/` + `assets/` + `i18n/`），部署到 GitHub Pages 的就是它。
 
 ## 数据模型:三层解耦

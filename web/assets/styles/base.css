@@ -1,0 +1,40 @@
+/* Design tokens shared by both modes. */
+:root {
+  --paper: #faf7f2;
+  --ink: #2b2723;
+  --accent: #c0392b;
+  --gold: #c9a227;
+  --line: #e8e0d6;
+  --night: #14203a;
+  --radius: 10px;
+  --touch: 44px;                 /* minimum touch target */
+  --t-press: 100ms;
+  --t-dice: 400ms;
+  --t-walk: 1000ms;
+  --t-card-out: 150ms;
+  --t-card-develop: 350ms;
+  --t-card-set: 100ms;
+  --t-info: 3000ms;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Noto Sans SC", "PingFang SC", system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.serif { font-family: "Noto Serif SC", "Songti SC", serif; }
+/* Handwriting is reserved for sourced quotes only. */
+.handwriting { font-family: "Ma Shan Zheng", "Kaiti SC", cursive; }
+
+button {
+  min-height: var(--touch);
+  min-width: var(--touch);
+  border: 0;
+  border-radius: var(--radius);
+  font: inherit;
+  cursor: pointer;
+}

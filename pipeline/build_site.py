@@ -81,8 +81,8 @@ def write_site(payload: dict, web_dir: str, dist_dir: str) -> None:
         if os.path.isdir(src):
             shutil.copytree(src, os.path.join(dist_dir, sub), dirs_exist_ok=True)
 
-    # render city page (replace placeholder with city id)
-    tpl_path = os.path.join(web_dir, "templates", "city.html")
+    # render game page (replace placeholder with city id)
+    tpl_path = os.path.join(web_dir, "templates", "board.html")
     with open(tpl_path, "r", encoding="utf-8") as f:
         html = f.read().replace("{{CITY_ID}}", city_id)
     with open(os.path.join(dist_dir, "index.html"), "w", encoding="utf-8") as f:

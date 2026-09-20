@@ -101,7 +101,7 @@ def test_write_site_emits_json_and_copies_web(tmp_path):
     web = tmp_path / "web"
     (web / "assets").mkdir(parents=True)
     (web / "templates").mkdir(parents=True)
-    (web / "templates" / "city.html").write_text("<html>{{CITY_ID}}</html>", encoding="utf-8")
+    (web / "templates" / "board.html").write_text("<html>{{CITY_ID}}</html>", encoding="utf-8")
     (web / "assets" / "app.js").write_text("// app", encoding="utf-8")
     dist = tmp_path / "dist"
     payload = build_city_payload(PARIS, {"cafe": _poi()}, [_storyline()])
