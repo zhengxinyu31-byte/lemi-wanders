@@ -111,3 +111,42 @@ test("position survives a reload through storage", async () => {
   const g2 = createGame(PAYLOAD, createStorage(backend), fakeDeps(1));
   assert.strictEqual(g2.state().position, 2);
 });
+
+test("start() fires the opening tile as a single-event array", async () => {
+  const deps = fakeDeps(2);
+  const g = createGame(PAYLOAD, createStorage(mem()), deps);
+  const events = await g.start();
+  assert.strictEqual(events.length, 1);
+  assert.strictEqual(events[0].tileIndex, 0);
+  assert.deepStrictEqual(deps._moves, [[0, true]]);
+});
+
+test("start() collects the opening POI card as new", async () => {
+  const storage = createStorage(mem());
+  const g = createGame(PAYLOAD, storage, fakeDeps(2));
+  const events = await g.start();
+  assert.strictEqual(events[0].kind, "card");
+  assert.strictEqual(events[0].isNew, true);
+  assert.strictEqual(events[0].content.id, "ca");
+  assert.strictEqual(storage.cardCount(), 1);
+});
+
+test("start() is idempotent - replaying never double-collects", async () => {
+  const storage = createStorage(mem());
+  const g = createGame(PAYLOAD, storage, fakeDeps(2));
+  await g.start();
+  const events = await g.start();
+  assert.strictEqual(events[0].isNew, false);
+  assert.strictEqual(storage.cardCount(), 1);
+});
+
+test("reset() returns to the start and persists through storage", async () => {
+  const backend = mem();
+  const g = createGame(PAYLOAD, createStorage(backend), fakeDeps(2));
+  await g.roll();
+  g.reset();
+  assert.strictEqual(g.state().position, 0);
+  assert.strictEqual(g.state().finished, false);
+  const g2 = createGame(PAYLOAD, createStorage(backend), fakeDeps(1));
+  assert.strictEqual(g2.state().position, 0);
+});
