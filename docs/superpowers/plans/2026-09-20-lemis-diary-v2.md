@@ -1628,4 +1628,510 @@ git commit -m "feat(dice): roll and movement that never skips a tile or overshoo
 
 ---
 
-*(Task 9-16 待续写)*
+## Task 9: 卡片数据整形
+
+**Files:**
+- Create: `web/assets/game/card.js`
+- Test: `tests/js/card.test.js`
+
+**Interfaces:**
+- Consumes: Task 6 产出的 payload `cards` 字典
+- Produces: `shapeCard(raw, lang)` 返回 `{id, rarity, title, body, quote, image, hasImage}`;`rarityClass(rarity)` 返回 CSS 类名。Task 13 主循环、Task 11 卡册消费。
+
+**Review Focus 覆盖:** 本任务的测试覆盖 #5 图片加载失败时卡片仍可读。
+
+- [ ] **Step 1: 写失败测试**
+
+Create `tests/js/card.test.js`:
+
+```javascript
+const { test } = require("node:test");
+const assert = require("node:assert");
+const { shapeCard, rarityClass } = require("../../web/assets/game/card.js");
+
+const RAW = {
+  id: "paris-tour-eiffel-r", rarity: "R", poi_id: "tour-eiffel",
+  title_zh: "埃菲尔铁塔", title_en: "Eiffel Tower",
+  body_zh: "中文正文", body_en: "English body",
+  image: { url: "https://x/a.jpg", thumb: "https://x/t.jpg" },
+  quote: { text_zh: "译文", text_original: "orig",
+           source: "书, 1890", source_url: "https://a.example" },
+};
+
+test("shapeCard picks the requested language", () => {
+  assert.strictEqual(shapeCard(RAW, "zh").title, "埃菲尔铁塔");
+  assert.strictEqual(shapeCard(RAW, "en").title, "Eiffel Tower");
+});
+
+test("shapeCard falls back when a translation is missing", () => {
+  const partial = Object.assign({}, RAW, { title_en: "" });
+  assert.strictEqual(shapeCard(partial, "en").title, "埃菲尔铁塔");
+});
+
+test("card without an image is still readable", () => {
+  const noImg = Object.assign({}, RAW, { image: null });
+  const c = shapeCard(noImg, "zh");
+  assert.strictEqual(c.hasImage, false);
+  assert.strictEqual(c.body, "中文正文");   // 正文仍在,不是空白卡
+  assert.strictEqual(c.title, "埃菲尔铁塔");
+});
+
+test("card with a blank image url counts as having no image", () => {
+  const blank = Object.assign({}, RAW, { image: { url: "", thumb: "" } });
+  assert.strictEqual(shapeCard(blank, "zh").hasImage, false);
+});
+
+test("quote is shaped with its source for attribution", () => {
+  const q = shapeCard(RAW, "zh").quote;
+  assert.strictEqual(q.text, "译文");
+  assert.strictEqual(q.original, "orig");
+  assert.strictEqual(q.source, "书, 1890");
+});
+
+test("card without a quote yields null, not an empty object", () => {
+  const noQuote = Object.assign({}, RAW, { quote: undefined });
+  assert.strictEqual(shapeCard(noQuote, "zh").quote, null);
+});
+
+test("rarityClass maps each rarity to its own class", () => {
+  assert.strictEqual(rarityClass("R"), "card-r");
+  assert.strictEqual(rarityClass("SR"), "card-sr");
+  assert.strictEqual(rarityClass("SSR"), "card-ssr");
+});
+
+test("unknown rarity degrades to the common class", () => {
+  assert.strictEqual(rarityClass("bogus"), "card-r");
+});
+```
+
+- [ ] **Step 2: 运行确认失败**
+
+Run: `node --test --test-concurrency=2 tests/js/card.test.js`
+Expected: FAIL — 模块不存在
+
+- [ ] **Step 3: 实现**
+
+Create `web/assets/game/card.js`:
+
+```javascript
+// Card shaping. A card must stay readable when its image is missing or
+// fails to load, so hasImage is reported separately from the text.
+
+function pick(zh, en, lang) {
+  if (lang === "en") return en || zh || "";
+  return zh || en || "";
+}
+
+function shapeCard(raw, lang) {
+  var img = raw.image || null;
+  var hasImage = !!(img && img.url);
+  var quote = null;
+  if (raw.quote) {
+    quote = {
+      text: raw.quote.text_zh || "",
+      original: raw.quote.text_original || "",
+      source: raw.quote.source || "",
+      sourceUrl: raw.quote.source_url || "",
+    };
+  }
+  return {
+    id: raw.id,
+    rarity: raw.rarity,
+    poiId: raw.poi_id || "",
+    title: pick(raw.title_zh, raw.title_en, lang),
+    body: pick(raw.body_zh, raw.body_en, lang),
+    image: img,
+    hasImage: hasImage,
+    quote: quote,
+  };
+}
+
+function rarityClass(rarity) {
+  if (rarity === "SSR") return "card-ssr";
+  if (rarity === "SR") return "card-sr";
+  return "card-r";
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { shapeCard: shapeCard, rarityClass: rarityClass };
+} else if (typeof window !== "undefined") {
+  window.LemiCard = { shapeCard: shapeCard, rarityClass: rarityClass };
+}
+```
+
+- [ ] **Step 4: 运行确认通过**
+
+Run: `node --test --test-concurrency=2 tests/js/card.test.js`
+Expected: PASS(8 个用例)
+
+- [ ] **Step 5: 提交**
+
+```bash
+git add web/assets/game/card.js tests/js/card.test.js
+git commit -m "feat(card): shape card data with language fallback and image-absent handling"
+```
+
+---
+
+## Task 10: 格子触发规则
+
+**Files:**
+- Create: `web/assets/game/tiles.js`
+- Test: `tests/js/tiles.test.js`
+
+**Interfaces:**
+- Consumes: Task 6 payload 的 `board`/`cards`/`street_cards`/`chance`;Task 7 storage 的 `hasCard`
+- Produces: `resolveTile(tile, payload, lang)` 返回 `{kind, durationMs, content}`;`isNight(index, nightFrom)` 返回布尔。Task 13 主循环消费。
+
+**时长(spec 5.2/5.5,精确值):** POI 格与彩蛋格掉卡 600ms;机会/机位/街头格统一 3000ms。
+
+- [ ] **Step 1: 写失败测试**
+
+Create `tests/js/tiles.test.js`:
+
+```javascript
+const { test } = require("node:test");
+const assert = require("node:assert");
+const { resolveTile, isNight, DURATIONS } = require("../../web/assets/game/tiles.js");
+
+const PAYLOAD = {
+  pois: { "tour-eiffel": { id: "tour-eiffel", name_zh: "埃菲尔铁塔",
+                           name_en: "Eiffel Tower" } },
+  cards: { "paris-tour-eiffel-r": { id: "paris-tour-eiffel-r", rarity: "R",
+                                    poi_id: "tour-eiffel", title_zh: "铁塔",
+                                    title_en: "Tower", body_zh: "正文",
+                                    body_en: "body" },
+           "paris-sr-petition": { id: "paris-sr-petition", rarity: "SR",
+                                  title_zh: "47 人", title_en: "The 47",
+                                  body_zh: "正文", body_en: "body" } },
+  street_cards: { "paris-bonjour": { id: "paris-bonjour", category: "etiquette",
+                                     text_zh: "先说 Bonjour",
+                                     text_en: "Say Bonjour" } },
+  chance: { "paris-eiffel-petition": { id: "paris-eiffel-petition",
+                                       question_zh: "多少人签名?",
+                                       question_en: "How many signed?",
+                                       options_zh: ["7", "47", "300"],
+                                       options_en: ["7", "47", "300"],
+                                       answer_index: 1,
+                                       explain_zh: "47 位。",
+                                       explain_en: "Forty-seven." } },
+};
+
+test("poi tile drops the matching R card", () => {
+  const t = { index: 0, type: "poi", poi_id: "tour-eiffel" };
+  const r = resolveTile(t, PAYLOAD, "zh");
+  assert.strictEqual(r.kind, "card");
+  assert.strictEqual(r.content.id, "paris-tour-eiffel-r");
+  assert.strictEqual(r.durationMs, DURATIONS.card);
+});
+
+test("easter tile drops an SR card", () => {
+  const t = { index: 4, type: "easter", content_id: "paris-sr-petition" };
+  const r = resolveTile(t, PAYLOAD, "zh");
+  assert.strictEqual(r.kind, "card");
+  assert.strictEqual(r.content.rarity, "SR");
+});
+
+test("street tile returns text at the shared 3s duration", () => {
+  const t = { index: 1, type: "street", content_id: "paris-bonjour" };
+  const r = resolveTile(t, PAYLOAD, "zh");
+  assert.strictEqual(r.kind, "street");
+  assert.strictEqual(r.content.text, "先说 Bonjour");
+  assert.strictEqual(r.durationMs, 3000);
+});
+
+test("chance tile carries options and the answer index", () => {
+  const t = { index: 2, type: "chance", content_id: "paris-eiffel-petition" };
+  const r = resolveTile(t, PAYLOAD, "zh");
+  assert.strictEqual(r.kind, "chance");
+  assert.strictEqual(r.content.answerIndex, 1);
+  assert.deepStrictEqual(r.content.options, ["7", "47", "300"]);
+  assert.strictEqual(r.durationMs, 3000);
+});
+
+test("chance tile shapes English options when asked", () => {
+  const t = { index: 2, type: "chance", content_id: "paris-eiffel-petition" };
+  assert.strictEqual(resolveTile(t, PAYLOAD, "en").content.question,
+                     "How many signed?");
+});
+
+test("a tile whose content is missing degrades to a skip, not a crash", () => {
+  const t = { index: 3, type: "street", content_id: "does-not-exist" };
+  const r = resolveTile(t, PAYLOAD, "zh");
+  assert.strictEqual(r.kind, "skip");
+  assert.strictEqual(r.durationMs, 0);
+});
+
+test("poi tile with no matching card degrades to a skip", () => {
+  const t = { index: 0, type: "poi", poi_id: "unknown-poi" };
+  assert.strictEqual(resolveTile(t, PAYLOAD, "zh").kind, "skip");
+});
+
+test("isNight flips at the configured index and stays night after", () => {
+  assert.strictEqual(isNight(12, 13), false);
+  assert.strictEqual(isNight(13, 13), true);
+  assert.strictEqual(isNight(19, 13), true);
+});
+```
+
+- [ ] **Step 2: 运行确认失败**
+
+Run: `node --test --test-concurrency=2 tests/js/tiles.test.js`
+Expected: FAIL — 模块不存在
+
+- [ ] **Step 3: 实现**
+
+Create `web/assets/game/tiles.js`:
+
+```javascript
+// Tile resolution: given a board tile, work out what to show and for how
+// long. Missing content degrades to a skip so a content gap never stalls
+// the game loop.
+
+var DURATIONS = { card: 600, info: 3000 };
+
+function pick(zh, en, lang) {
+  if (lang === "en") return en || zh || "";
+  return zh || en || "";
+}
+
+function _card(raw, lang) {
+  var shape = (typeof require !== "undefined")
+    ? require("./card.js").shapeCard
+    : window.LemiCard.shapeCard;
+  return { kind: "card", durationMs: DURATIONS.card, content: shape(raw, lang) };
+}
+
+function _skip() {
+  return { kind: "skip", durationMs: 0, content: null };
+}
+
+function resolveTile(tile, payload, lang) {
+  if (tile.type === "poi") {
+    var cards = payload.cards || {};
+    for (var id in cards) {
+      if (cards[id].poi_id === tile.poi_id) return _card(cards[id], lang);
+    }
+    return _skip();
+  }
+  if (tile.type === "easter") {
+    var c = (payload.cards || {})[tile.content_id];
+    return c ? _card(c, lang) : _skip();
+  }
+  if (tile.type === "street") {
+    var s = (payload.street_cards || {})[tile.content_id];
+    if (!s) return _skip();
+    return { kind: "street", durationMs: DURATIONS.info,
+             content: { id: s.id, category: s.category,
+                        text: pick(s.text_zh, s.text_en, lang) } };
+  }
+  if (tile.type === "chance") {
+    var q = (payload.chance || {})[tile.content_id];
+    if (!q) return _skip();
+    return { kind: "chance", durationMs: DURATIONS.info,
+             content: { id: q.id,
+                        question: pick(q.question_zh, q.question_en, lang),
+                        options: lang === "en" ? q.options_en : q.options_zh,
+                        answerIndex: q.answer_index,
+                        explain: pick(q.explain_zh, q.explain_en, lang) } };
+  }
+  if (tile.type === "photo") {
+    var poi = (payload.pois || {})[tile.poi_id] || null;
+    if (!poi) return _skip();
+    return { kind: "photo", durationMs: DURATIONS.info,
+             content: { poiId: poi.id,
+                        name: pick(poi.name_zh, poi.name_en, lang),
+                        image: (poi.base_images || [])[0] || null } };
+  }
+  return _skip();
+}
+
+function isNight(index, nightFrom) {
+  return index >= nightFrom;
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { resolveTile: resolveTile, isNight: isNight,
+                     DURATIONS: DURATIONS };
+} else if (typeof window !== "undefined") {
+  window.LemiTiles = { resolveTile: resolveTile, isNight: isNight,
+                       DURATIONS: DURATIONS };
+}
+```
+
+- [ ] **Step 4: 运行确认通过**
+
+Run: `node --test --test-concurrency=2 tests/js/tiles.test.js`
+Expected: PASS(8 个用例)
+
+- [ ] **Step 5: 提交**
+
+```bash
+git add web/assets/game/tiles.js tests/js/tiles.test.js
+git commit -m "feat(tiles): resolve tile content per type with skip-on-missing degradation"
+```
+
+---
+
+## Task 11: 卡册
+
+**Files:**
+- Create: `web/assets/game/collection.js`
+- Test: `tests/js/collection.test.js`
+
+**Interfaces:**
+- Consumes: Task 7 storage;Task 6 payload `cards`
+- Produces: `buildCollection(payload, storage, lang)` 返回 `{slots, owned, total, ssr}`。Task 13 渲染卡册页面时消费。
+
+**规则(spec 第 4、8 节):** 分母为 10(7 R + 3 SR),SSR 不计入。未获得的卡必须以剪影占位出现在 slots 中,不能从列表里消失。
+
+- [ ] **Step 1: 写失败测试**
+
+Create `tests/js/collection.test.js`:
+
+```javascript
+const { test } = require("node:test");
+const assert = require("node:assert");
+const { buildCollection } = require("../../web/assets/game/collection.js");
+const { createStorage } = require("../../web/assets/core/storage.js");
+
+function mem() {
+  let s = {};
+  return { getItem: (k) => (k in s ? s[k] : null),
+           setItem: (k, v) => { s[k] = String(v); } };
+}
+
+function payloadWith(n) {
+  const cards = {};
+  for (let i = 0; i < n; i++) {
+    cards["c" + i] = { id: "c" + i, rarity: i < 7 ? "R" : "SR",
+                       title_zh: "卡" + i, title_en: "Card " + i,
+                       body_zh: "正文", body_en: "body" };
+  }
+  return { cards: cards, ssr_shards_required: 3 };
+}
+
+test("every card has a slot even when nothing is collected", () => {
+  const c = buildCollection(payloadWith(10), createStorage(mem()), "zh");
+  assert.strictEqual(c.slots.length, 10);
+  assert.strictEqual(c.owned, 0);
+  assert.strictEqual(c.total, 10);
+});
+
+test("uncollected slots are silhouettes carrying no title", () => {
+  const c = buildCollection(payloadWith(10), createStorage(mem()), "zh");
+  assert.strictEqual(c.slots[0].owned, false);
+  assert.strictEqual(c.slots[0].title, "");     // 剪影不剧透内容
+  assert.strictEqual(c.slots[0].rarity, "R");   // 但稀有度可见
+});
+
+test("collected slots reveal their title", () => {
+  const st = createStorage(mem());
+  st.addCard("c0");
+  const c = buildCollection(payloadWith(10), st, "zh");
+  assert.strictEqual(c.slots[0].owned, true);
+  assert.strictEqual(c.slots[0].title, "卡0");
+  assert.strictEqual(c.owned, 1);
+});
+
+test("slots are ordered R first then SR", () => {
+  const c = buildCollection(payloadWith(10), createStorage(mem()), "zh");
+  assert.deepStrictEqual(c.slots.slice(0, 7).map((s) => s.rarity),
+                         ["R", "R", "R", "R", "R", "R", "R"]);
+  assert.deepStrictEqual(c.slots.slice(7).map((s) => s.rarity),
+                         ["SR", "SR", "SR"]);
+});
+
+test("ssr is locked and excluded from the denominator", () => {
+  const c = buildCollection(payloadWith(10), createStorage(mem()), "zh");
+  assert.strictEqual(c.total, 10);          // 不是 11
+  assert.strictEqual(c.ssr.locked, true);
+  assert.strictEqual(c.ssr.shards, 0);
+  assert.strictEqual(c.ssr.required, 3);
+});
+
+test("collecting every card does not unlock ssr on its own", () => {
+  const st = createStorage(mem());
+  for (let i = 0; i < 10; i++) st.addCard("c" + i);
+  const c = buildCollection(payloadWith(10), st, "zh");
+  assert.strictEqual(c.owned, 10);
+  assert.strictEqual(c.ssr.locked, true);   // 需 3 条故事线,非集满本线
+});
+```
+
+- [ ] **Step 2: 运行确认失败**
+
+Run: `node --test --test-concurrency=2 tests/js/collection.test.js`
+Expected: FAIL — 模块不存在
+
+- [ ] **Step 3: 实现**
+
+Create `web/assets/game/collection.js`:
+
+```javascript
+// The card album. Uncollected cards keep a silhouette slot so the player
+// can see what is still missing — that visible gap is what drives
+// collection. SSR is a city-level reward and never counts toward the
+// per-storyline denominator.
+
+var RARITY_ORDER = { R: 0, SR: 1 };
+
+function pick(zh, en, lang) {
+  if (lang === "en") return en || zh || "";
+  return zh || en || "";
+}
+
+function buildCollection(payload, storage, lang) {
+  var cards = payload.cards || {};
+  var ids = Object.keys(cards).filter(function (id) {
+    return cards[id].rarity === "R" || cards[id].rarity === "SR";
+  });
+  ids.sort(function (a, b) {
+    var d = RARITY_ORDER[cards[a].rarity] - RARITY_ORDER[cards[b].rarity];
+    return d !== 0 ? d : (a < b ? -1 : 1);
+  });
+
+  var owned = 0;
+  var slots = ids.map(function (id) {
+    var has = storage.hasCard(id);
+    if (has) owned += 1;
+    return {
+      id: id,
+      rarity: cards[id].rarity,
+      owned: has,
+      title: has ? pick(cards[id].title_zh, cards[id].title_en, lang) : "",
+    };
+  });
+
+  var shards = (storage.load().ssr_shards || {}).paris || 0;
+  var required = payload.ssr_shards_required || 3;
+  return {
+    slots: slots,
+    owned: owned,
+    total: slots.length,
+    ssr: { locked: shards < required, shards: shards, required: required },
+  };
+}
+
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = { buildCollection: buildCollection };
+} else if (typeof window !== "undefined") {
+  window.LemiCollection = { buildCollection: buildCollection };
+}
+```
+
+- [ ] **Step 4: 运行确认通过**
+
+Run: `node --test --test-concurrency=2 tests/js/collection.test.js`
+Expected: PASS(6 个用例)
+
+- [ ] **Step 5: 提交**
+
+```bash
+git add web/assets/game/collection.js tests/js/collection.test.js
+git commit -m "feat(collection): album with silhouette slots and city-level SSR lock"
+```
+
+---
+
+*(Task 12-16 待续写)*
