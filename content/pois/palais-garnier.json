@@ -1,0 +1,13 @@
+{
+  "id": "palais-garnier", "city": "paris", "country": "France",
+  "name_zh": "加尼叶歌剧院", "name_en": "Palais Garnier",
+  "lat": 48.8714332, "lng": 2.3319654,
+  "address_zh": "歌剧院广场,75009", "address_en": "Place de l'Opéra, 75009",
+  "base_images": [],
+  "practical": {
+    "type": "practical",
+    "text_zh": "付费参观约 15 欧,可看华丽内厅;也可购票观看演出。开放 10:00-17:00。地铁 Opéra(3/7/8号线)。",
+    "text_en": "Paid visit around €15 to see the lavish interior; you can also buy tickets for a performance. Open 10:00-17:00. Metro: Opéra (L3/L7/L8).",
+    "confidence": "high"
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "jardin-palais-royal", "city": "paris", "country": "France",
+  "name_zh": "皇家宫殿花园", "name_en": "Jardin du Palais-Royal",
+  "lat": 48.8649078, "lng": 2.3377594,
+  "address_zh": "皇家宫殿花园,75001", "address_en": "Jardin du Palais Royal, 75001",
+  "base_images": [],
+  "practical": {
+    "type": "practical",
+    "text_zh": "免费开放花园。布伦黑白条纹柱阵(Les Deux Plateaux)在入口广场。开放时间约 8:00-22:30(随季节变动)。地铁 Palais Royal–Musée du Louvre(1/7号线)。",
+    "text_en": "Free public garden. Buren's black-and-white striped columns (Les Deux Plateaux) are on the entrance courtyard. Open roughly 8:00-22:30 (varies by season). Metro: Palais Royal–Musée du Louvre (L1/L7).",
+    "confidence": "high"
+  }
+}

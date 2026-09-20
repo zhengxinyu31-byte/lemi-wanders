@@ -1,0 +1,13 @@
+{
+  "id": "cafe-de-flore", "city": "paris", "country": "France",
+  "name_zh": "花神咖啡馆", "name_en": "Café de Flore",
+  "lat": 48.8541444, "lng": 2.3326307,
+  "address_zh": "圣日耳曼大道172号,75006", "address_en": "172 Bd Saint-Germain, 75006",
+  "base_images": [],
+  "practical": {
+    "type": "practical",
+    "text_zh": "营业中,咖啡偏贵但氛围独特,全天营业至凌晨。就在圣日耳曼德佩教堂旁。地铁 Saint-Germain-des-Prés(4号线)。",
+    "text_en": "Open all day until late; pricey coffee but an iconic vibe, right by the Saint-Germain-des-Prés church. Metro: Saint-Germain-des-Prés (L4).",
+    "confidence": "high"
+  }
+}

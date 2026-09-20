@@ -1,0 +1,13 @@
+{
+  "id": "pont-alexandre-iii", "city": "paris", "country": "France",
+  "name_zh": "亚历山大三世桥", "name_en": "Pont Alexandre III",
+  "lat": 48.8634697, "lng": 2.3135181,
+  "address_zh": "亚历山大三世桥,75008", "address_en": "Pont Alexandre III, 75008",
+  "base_images": [],
+  "practical": {
+    "type": "practical",
+    "text_zh": "免费,全天开放。日落时分金色雕塑最美。连接荣军院与大小皇宫。地铁 Invalides(8/13号线)。",
+    "text_en": "Free and open all day. The golden statues look best at sunset. Links Les Invalides with the Grand and Petit Palais. Metro: Invalides (L8/L13).",
+    "confidence": "high"
+  }
+}

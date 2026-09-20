@@ -1,0 +1,13 @@
+{
+  "id": "pantheon", "city": "paris", "country": "France",
+  "name_zh": "先贤祠", "name_en": "Panthéon",
+  "lat": 48.8470071, "lng": 2.3437746,
+  "address_zh": "先贤祠广场,75005", "address_en": "Place du Panthéon, 75005",
+  "base_images": [],
+  "practical": {
+    "type": "practical",
+    "text_zh": "付费参观,约 11.5 欧,可登顶俯瞰巴黎。开放时间 10:00-18:00(冬季至 18:00)。最近地铁 Cardinal Lemoine(10号线)。",
+    "text_en": "Paid entry, around €11.5; you can climb to the dome for a view over Paris. Open 10:00-18:00 (until 18:00 in winter). Nearest metro: Cardinal Lemoine (L10).",
+    "confidence": "high"
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "id": "emily-in-paris", "city": "paris",
+  "title_zh": "《艾米莉在巴黎》足迹", "title_en": "Emily in Paris Trail",
+  "theme": "Emily in Paris",
+  "summary_zh": "沿剧中取景地漫步巴黎左岸与右岸,从 Emily 居住的拉丁区到她工作的皇家宫殿一带,再到那些成为全球打卡地的桥与铁塔。",
+  "summary_en": "A walk through Emily's Paris filming locations across the Left and Right Banks, from her Latin Quarter home to the Palais-Royal where she works, out to the bridge and tower that became global photo spots.",
+  "poster": null,
+  "stops": [
+    {"poi_id": "place-estrapade", "order": 1, "narrative": [
+      {"type": "scene", "text_zh": "Emily 在巴黎的家,剧中那扇绿色大门 No.1 是全球剧迷的打卡起点。楼下就是她常去的面包店和 Gabriel 的餐厅。",
+       "text_en": "Emily's home in Paris; the green door at No.1 is where fans around the world start their pilgrimage. Downstairs are her go-to bakery and Gabriel's restaurant.", "confidence": "high"},
+      {"type": "anecdote", "text_zh": "剧集播出后,现实中这栋楼的居民不堪其扰——每天大量游客来门口拍照,当地媒体报道过居民的抱怨。安静的拉丁区小广场因此变成了'网红'地标。",
+       "text_en": "After the show aired, residents of the building were overwhelmed — crowds came daily to photograph the door, and local media covered their complaints. A quiet Latin Quarter square turned into a viral landmark.", "confidence": "high"},
+      {"type": "history", "text_zh": "Estrapade 之名源于中世纪一种叫 'strappado' 的刑罚,该广场历史上曾是行刑地。如今是安静的居民区。",
+       "text_en": "The name Estrapade comes from a medieval torture called the 'strappado'; the square was once a place of execution. Today it is a quiet residential area.", "confidence": "mid"}
+    ]},
+    {"poi_id": "pantheon", "order": 2, "narrative": [
+      {"type": "scene", "text_zh": "Emily 公寓所在街区的地标背景,多次出现在她晨跑和通勤的镜头里。",
+       "text_en": "The landmark backdrop of Emily's neighborhood, appearing in many of her morning-run and commute shots.", "confidence": "high"},
+      {"type": "anecdote", "text_zh": "剧中 Emily 常以先贤祠为背景发 Instagram,呼应了剧集'把巴黎当成滤镜背景板'的争议——法国观众批评该剧充满对巴黎的浪漫化刻板印象。",
+       "text_en": "Emily often posts to Instagram with the Panthéon behind her, echoing the show's 'Paris as a filter backdrop' controversy — French viewers criticised it for romanticised clichés of the city.", "confidence": "high"},
+      {"type": "masterpiece", "text_zh": "先贤祠安葬着伏尔泰、卢梭、雨果、左拉、居里夫人等法国伟人。《悲惨世界》的雨果、《社会契约论》的卢梭长眠于此,是法国文学与思想的圣殿。",
+       "text_en": "The Panthéon holds the tombs of Voltaire, Rousseau, Hugo, Zola and Marie Curie. Hugo of Les Misérables and Rousseau of The Social Contract rest here — a shrine of French literature and thought.", "confidence": "high"},
+      {"type": "history", "text_zh": "原为路易十五还愿建造的圣女热纳维耶芙教堂,法国大革命后改为安葬伟人的世俗先贤祠。傅科摆最早在此进行地球自转实验。",
+       "text_en": "Built as the church of Sainte-Geneviève on a vow of Louis XV, it became a secular mausoleum for great figures after the Revolution. Foucault first demonstrated the Earth's rotation with his pendulum here.", "confidence": "mid"}
+    ]},
+    {"poi_id": "cafe-de-flore", "order": 3, "narrative": [
+      {"type": "scene", "text_zh": "Emily 与朋友 Mindy 谈心、体验巴黎咖啡馆文化的经典场景地,左岸咖啡馆的代表。",
+       "text_en": "The classic setting where Emily and her friend Mindy chat over coffee and soak up Paris café culture — the emblem of the Left Bank café.", "confidence": "high"},
+      {"type": "anecdote", "text_zh": "剧中 Emily 把在花神咖啡馆喝咖啡当成'巴黎生活'的仪式感。现实中这家咖啡馆因游客暴增、价格高昂(一杯咖啡 7-9 欧)常被本地人调侃'只剩游客'。",
+       "text_en": "Emily treats a coffee at the Flore as a ritual of 'Parisian life'. In reality, with tourist crowds and steep prices (€7-9 a cup), locals joke that only tourists are left.", "confidence": "high"},
+      {"type": "masterpiece", "text_zh": "萨特与波伏娃在此写作、辩论,是存在主义哲学的诞生地之一;加缪、毕加索也是常客。波伏娃《第二性》的许多思考在此酝酿。",
+       "text_en": "Sartre and Beauvoir wrote and debated here, making it a birthplace of existentialism; Camus and Picasso were regulars too. Much of Beauvoir's The Second Sex took shape at these tables.", "confidence": "high"},
+      {"type": "history", "text_zh": "创立于1887年,'花神'得名于对面的一尊花神芙罗拉雕像。二战后成为法国知识分子的据点。",
+       "text_en": "Founded in 1887, the 'Flore' is named after a statue of the goddess Flora that once stood opposite. After WWII it became a hub for French intellectuals.", "confidence": "mid"}
+    ]},
+    {"poi_id": "jardin-palais-royal", "order": 4, "narrative": [
+      {"type": "scene", "text_zh": "Emily 工作地(剧中 Savoir 公司)附近的花园,剧中角色散步、约谈的浪漫场景地。",
+       "text_en": "The garden beside Emily's workplace (the fictional firm Savoir), a romantic spot where characters stroll and talk.", "confidence": "high"},
+      {"type": "anecdote", "text_zh": "花园里的布伦黑白条纹柱阵(Les Deux Plateaux)是巴黎最著名的当代艺术打卡点之一,游客爱在柱子上跳跃拍照。",
+       "text_en": "Buren's black-and-white striped columns (Les Deux Plateaux) in the courtyard are one of Paris's most famous contemporary-art photo spots, where visitors love to hop across the pillars.", "confidence": "high"},
+      {"type": "masterpiece", "text_zh": "作家科莱特(Colette)长住于此;这里也是《午夜巴黎》《天使爱美丽》等多部电影钟爱的取景地,是巴黎'文艺浪漫'的浓缩符号。",
+       "text_en": "The writer Colette lived here for years; it is also a beloved location for films like Midnight in Paris and Amélie — a concentrated symbol of artistic, romantic Paris.", "confidence": "mid"},
+      {"type": "history", "text_zh": "建于17世纪,曾是法国大革命的舆论策源地之一,咖啡馆云集,革命者常在此演讲。",
+       "text_en": "Built in the 17th century, it was one of the seedbeds of Revolutionary opinion, lined with cafés where revolutionaries gave speeches.", "confidence": "mid"}
+    ]},
+    {"poi_id": "palais-garnier", "order": 5, "narrative": [
+      {"type": "scene", "text_zh": "剧中出现的宏伟歌剧院,象征巴黎的古典奢华,是 Emily 参加高端活动的场景背景。",
+       "text_en": "The grand opera house seen in the show, a symbol of Paris's classical luxury and the backdrop for Emily's upscale events.", "confidence": "high"},
+      {"type": "anecdote", "text_zh": "剧集用加尼叶歌剧院强化'巴黎=奢华优雅'的视觉印象。它的大理石阶梯和金色大厅是无数时尚大片的拍摄地。",
+       "text_en": "The show uses the Palais Garnier to reinforce the image of 'Paris equals luxury and elegance'. Its marble staircase and golden hall have hosted countless fashion shoots.", "confidence": "high"},
+      {"type": "masterpiece", "text_zh": "加斯东·勒鲁的小说《歌剧魅影》即以此歌剧院为背景,地下湖、包厢 No.5 都是小说元素;夏加尔为其绘制了穹顶壁画。",
+       "text_en": "Gaston Leroux's novel The Phantom of the Opera is set in this very house — the underground lake and Box No.5 are drawn from it; Chagall painted the ceiling fresco.", "confidence": "high"},
+      {"type": "history", "text_zh": "1875年落成,建筑师夏尔·加尼叶设计,是拿破仑三世第二帝国建筑风格的代表,'加尼叶宫'之名即来自建筑师。",
+       "text_en": "Completed in 1875 to a design by Charles Garnier, it exemplifies the Second Empire style of Napoleon III; the name 'Palais Garnier' honours its architect.", "confidence": "mid"}
+    ]},
+    {"poi_id": "pont-alexandre-iii", "order": 6, "narrative": [
+      {"type": "scene", "text_zh": "剧中最浪漫的桥,Emily 多次在此拍照、漫步,是金色雕塑与埃菲尔铁塔同框的经典机位。",
+       "text_en": "The most romantic bridge in the show, where Emily strolls and poses again and again — the classic spot to frame the golden statues with the Eiffel Tower.", "confidence": "high"},
+      {"type": "anecdote", "text_zh": "这座桥被公认为巴黎最华丽的桥,是无数影视剧(《午夜巴黎》《007》等)的取景地。剧中它几乎是'巴黎浪漫'的视觉图腾。",
+       "text_en": "Widely regarded as the most ornate bridge in Paris, it has featured in countless films (Midnight in Paris, James Bond and more). In the show it is almost a visual totem of Parisian romance.", "confidence": "high"},
+      {"type": "masterpiece", "text_zh": "作为美好年代(Belle Époque)建筑艺术的巅峰之作,桥本身就是一件雕塑作品,金色飞马、天使雕像出自多位法国雕塑家之手。",
+       "text_en": "A pinnacle of Belle Époque architecture, the bridge is itself a work of sculpture; its gilded winged horses and angels are the work of several French sculptors.", "confidence": "mid"},
+      {"type": "history", "text_zh": "建于1896-1900年,为1900年巴黎世博会而建,以俄国沙皇亚历山大三世命名,象征法俄同盟。",
+       "text_en": "Built 1896-1900 for the 1900 Paris World's Fair, it is named after Tsar Alexander III of Russia and symbolises the Franco-Russian alliance.", "confidence": "mid"}
+    ]},
+    {"poi_id": "tour-eiffel", "order": 7, "narrative": [
+      {"type": "scene", "text_zh": "剧集反复出现的终极巴黎符号,Emily 从公寓窗户、桥上、各处都能望见,是'巴黎梦'的视觉锚点。",
+       "text_en": "The ultimate Paris symbol that recurs throughout the show; Emily glimpses it from her window, the bridges and everywhere — the visual anchor of her 'Paris dream'.", "confidence": "high"},
+      {"type": "anecdote", "text_zh": "剧中 Emily 对铁塔的痴迷被法国观众吐槽'太游客视角'——巴黎本地人其实很少专程去看铁塔。这种'游客滤镜'正是该剧的争议核心。",
+       "text_en": "Emily's obsession with the tower struck French viewers as 'too touristy' — locals rarely make a special trip to see it. This tourist gaze sits at the heart of the show's controversy.", "confidence": "high"},
+      {"type": "masterpiece", "text_zh": "铁塔本身是无数文学、绘画、电影的主题;从莫泊桑(据说他讨厌铁塔却天天在塔上餐厅吃饭)到现代流行文化,它是巴黎最被再创作的对象。",
+       "text_en": "The tower is the subject of countless works of literature, painting and film; from Maupassant (who reputedly hated it yet dined in its restaurant daily) to modern pop culture, it is Paris's most reimagined object.", "confidence": "mid"},
+      {"type": "history", "text_zh": "为1889年巴黎世博会而建,设计师古斯塔夫·埃菲尔。落成时曾遭巴黎文艺界联名反对,如今是法国最标志性的建筑。",
+       "text_en": "Built for the 1889 World's Fair by Gustave Eiffel, it drew a petition of protest from the Paris art world when it opened; today it is France's most iconic structure.", "confidence": "mid"}
+    ]}
+  ]
+}

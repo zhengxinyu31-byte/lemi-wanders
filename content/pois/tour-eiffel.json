@@ -1,0 +1,13 @@
+{
+  "id": "tour-eiffel", "city": "paris", "country": "France",
+  "name_zh": "埃菲尔铁塔", "name_en": "Tour Eiffel",
+  "lat": 48.8560791, "lng": 2.2894654,
+  "address_zh": "战神广场,75007", "address_en": "Champ de Mars, 75007",
+  "base_images": [],
+  "practical": {
+    "type": "practical",
+    "text_zh": "登塔付费(约 18-29 欧不等),建议网上提前订票避开长队。夜间整点有 5 分钟闪灯秀。地铁 Bir-Hakeim(6号线);Trocadéro 机位最佳。",
+    "text_en": "Paid to go up (roughly €18-29); book online ahead to skip the queues. There is a 5-minute sparkle show on the hour after dark. Metro: Bir-Hakeim (L6); Trocadéro has the best photo spot.",
+    "confidence": "high"
+  }
+}
