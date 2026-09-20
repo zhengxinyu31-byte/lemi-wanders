@@ -5,7 +5,8 @@ import json
 from typing import List, Optional
 
 from pipeline.models import (
-    City, ImageRef, Narrative, POI, StoryLine, StoryStop, meets_threshold,
+    Card, City, ImageRef, Narrative, POI, Quote, StoryLine, StoryStop,
+    StreetCard, meets_threshold,
 )
 
 
@@ -70,6 +71,46 @@ def load_storyline(path: str) -> StoryLine:
         summary_en=d.get("summary_en", ""), stops=stops,
         poster=_image_from_dict(d.get("poster")),
     )
+
+
+def _quote_from_dict(d: Optional[dict]) -> Optional[Quote]:
+    if not d:
+        return None
+    return Quote(
+        text_zh=d.get("text_zh", ""), text_original=d.get("text_original", ""),
+        source=d.get("source", ""), source_url=d.get("source_url", ""),
+        verified=bool(d.get("verified", False)),
+    )
+
+
+def load_card(path: str) -> Card:
+    """Load a collectible card from a JSON file."""
+    d = json.loads(_read(path))
+    return Card(
+        id=d["id"], rarity=d["rarity"], storyline_id=d["storyline_id"],
+        poi_id=d.get("poi_id", ""),
+        image=_image_from_dict(d.get("image")),
+        title_zh=d.get("title_zh", ""), title_en=d.get("title_en", ""),
+        body_zh=d.get("body_zh", ""), body_en=d.get("body_en", ""),
+        quote=_quote_from_dict(d.get("quote")),
+    )
+
+
+def load_street_card(path: str) -> StreetCard:
+    """Load a street-knowledge card from a JSON file."""
+    d = json.loads(_read(path))
+    return StreetCard(
+        id=d["id"], category=d["category"],
+        text_zh=d.get("text_zh", ""), text_en=d.get("text_en", ""),
+        near_poi_id=d.get("near_poi_id", ""),
+        sources=list(d.get("sources", [])),
+        verified=bool(d.get("verified", False)),
+    )
+
+
+def load_chance(path: str) -> dict:
+    """Load a chance-tile quiz question. Returned as a plain dict."""
+    return json.loads(_read(path))
 
 
 def stops_for_storyline(storyline: StoryLine) -> List[StoryStop]:
