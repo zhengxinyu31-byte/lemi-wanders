@@ -23,6 +23,11 @@
 .chapter h2 { font-size: 22px; }
 .chapter p { line-height: 1.75; }
 
+/* Day / night split (spec §9): night chapters carry a dusk accent so the
+   two segments read as distinct without a per-chapter gradient. */
+.chapter.night h2 { color: var(--night); }
+.chapter.night h2::before { content: "🌙 "; }
+
 @media (min-width: 860px) {
   #codex { flex-direction: row-reverse; }
   #codex-map { flex: 1; height: 100dvh; }

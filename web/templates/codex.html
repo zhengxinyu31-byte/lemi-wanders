@@ -30,14 +30,28 @@
 
     var chapters = window.LemiCodex.buildChapters(payload, lang);
     var host = document.getElementById("chapters");
+    // Build with textContent, not innerHTML: narrative is an LLM output path,
+    // and a stray < or & in the copy would be silently swallowed (or worse).
     chapters.forEach(function (c) {
       var sec = document.createElement("section");
-      sec.className = "chapter";
+      sec.className = "chapter" + (c.night ? " night" : " day");
       sec.dataset.stop = c.order;
-      var html = "<h2>" + c.order + ". " + c.title + "</h2>";
-      if (c.image) html += '<img src="' + c.image.thumb + '" alt="" />';
-      c.blocks.forEach(function (b) { html += '<p class="serif">' + b.text + "</p>"; });
-      sec.innerHTML = html;
+      sec.dataset.daypart = c.night ? "night" : "day";
+      var h2 = document.createElement("h2");
+      h2.textContent = c.order + ". " + c.title;
+      sec.appendChild(h2);
+      if (c.image) {
+        var img = document.createElement("img");
+        img.src = c.image.thumb;
+        img.alt = "";
+        sec.appendChild(img);
+      }
+      c.blocks.forEach(function (b) {
+        var p = document.createElement("p");
+        p.className = "serif";
+        p.textContent = b.text;
+        sec.appendChild(p);
+      });
       host.appendChild(sec);
     });
 
