@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="430" viewBox="0 0 900 430">
+  <rect x="0" y="0" width="900" height="430" fill="#FBF7F0"/>
+
+  <!-- connectors (drawn first so they sit under boxes; endpoints at box edges) -->
+  <polyline points="390,70 390,100 105,100 105,130" fill="none" stroke="#8FA3B0" stroke-width="2"/>
+  <polygon points="105,130 100,121 110,121" fill="#8FA3B0"/>
+  <text x="150" y="95" font-family="sans-serif" font-size="12" fill="#8A7A5C">默认进入</text>
+
+  <polyline points="190,157 250,157" fill="none" stroke="#C9A96A" stroke-width="2"/>
+  <polygon points="250,157 241,152 241,162" fill="#C9A96A"/>
+  <polyline points="420,157 480,157" fill="none" stroke="#C9A96A" stroke-width="2"/>
+  <polygon points="480,157 471,152 471,162" fill="#C9A96A"/>
+  <polyline points="640,157 700,157" fill="none" stroke="#C9A96A" stroke-width="2"/>
+  <polygon points="700,157 691,152 691,162" fill="#C9A96A"/>
+
+  <polyline points="200,367 260,367" fill="none" stroke="#8FA3B0" stroke-width="2"/>
+  <polygon points="260,367 251,362 251,372" fill="#8FA3B0"/>
+  <polyline points="410,367 470,367" fill="none" stroke="#8FA3B0" stroke-width="2"/>
+  <polygon points="470,367 461,362 461,372" fill="#8FA3B0"/>
+
+  <!-- switch bidirectional links -->
+  <polyline points="335,184 335,232" fill="none" stroke="#B98FA6" stroke-width="2"/>
+  <polygon points="335,184 330,193 340,193" fill="#B98FA6"/>
+  <polygon points="335,232 330,223 340,223" fill="#B98FA6"/>
+  <text x="345" y="212" font-family="sans-serif" font-size="12" fill="#8A7A5C">游戏线</text>
+
+  <polyline points="335,284 335,340" fill="none" stroke="#B98FA6" stroke-width="2"/>
+  <polygon points="335,284 330,293 340,293" fill="#B98FA6"/>
+  <polygon points="335,340 330,331 340,331" fill="#B98FA6"/>
+  <text x="345" y="316" font-family="sans-serif" font-size="12" fill="#8A7A5C">常规线</text>
+
+  <!-- Start -->
+  <rect x="330" y="20" width="240" height="50" rx="10" fill="#EBD9B4" stroke="#C9A96A" stroke-width="2"/>
+  <text x="450" y="50" font-family="sans-serif" font-size="15" fill="#4A4033" text-anchor="middle" font-weight="bold">进入产品（默认游戏模式）</text>
+
+  <!-- Game lane -->
+  <rect x="20" y="130" width="170" height="54" rx="8" fill="#F5DCE3" stroke="#D99BAE" stroke-width="2"/>
+  <text x="105" y="162" font-family="sans-serif" font-size="14" fill="#4A4033" text-anchor="middle">上层导航（占位）</text>
+
+  <rect x="250" y="130" width="170" height="54" rx="8" fill="#F5DCE3" stroke="#D99BAE" stroke-width="2"/>
+  <text x="335" y="162" font-family="sans-serif" font-size="14" fill="#4A4033" text-anchor="middle">巴黎·艾米莉棋盘</text>
+
+  <rect x="480" y="130" width="160" height="54" rx="8" fill="#F5DCE3" stroke="#D99BAE" stroke-width="2"/>
+  <text x="560" y="162" font-family="sans-serif" font-size="14" fill="#4A4033" text-anchor="middle">走格掉卡集卡</text>
+
+  <rect x="700" y="130" width="130" height="54" rx="8" fill="#F5DCE3" stroke="#D99BAE" stroke-width="2"/>
+  <text x="765" y="162" font-family="sans-serif" font-size="14" fill="#4A4033" text-anchor="middle">卡册</text>
+
+  <!-- Switch -->
+  <rect x="240" y="232" width="340" height="52" rx="10" fill="#EBD9B4" stroke="#C9A96A" stroke-width="2"/>
+  <text x="410" y="263" font-family="sans-serif" font-size="14" fill="#4A4033" text-anchor="middle" font-weight="bold">右上角切换 · 互切保留上下文（游戏 ⇄ 常规）</text>
+
+  <!-- Regular lane -->
+  <rect x="20" y="340" width="180" height="54" rx="8" fill="#DCE6EC" stroke="#8FA3B0" stroke-width="2"/>
+  <text x="110" y="372" font-family="sans-serif" font-size="14" fill="#4A4033" text-anchor="middle">首页 Hub（四视角）</text>
+
+  <rect x="260" y="340" width="150" height="54" rx="8" fill="#DCE6EC" stroke="#8FA3B0" stroke-width="2"/>
+  <text x="335" y="372" font-family="sans-serif" font-size="14" fill="#4A4033" text-anchor="middle">搜索 / 浏览</text>
+
+  <rect x="470" y="340" width="270" height="54" rx="8" fill="#DCE6EC" stroke="#8FA3B0" stroke-width="2"/>
+  <text x="605" y="372" font-family="sans-serif" font-size="14" fill="#4A4033" text-anchor="middle">故事线页（双栏联动 · 自动播放）</text>
+</svg>

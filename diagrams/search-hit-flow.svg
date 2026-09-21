@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 700" font-family="Noto Sans SC, sans-serif">
+  <rect x="0" y="0" width="1040" height="700" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="520" y="24" font-size="17" font-weight="bold" fill="#212529" text-anchor="middle">常规模式 · 搜索命中后的动线分支</text>
+
+  <!-- A: input -->
+  <rect x="380" y="44" width="300" height="52" rx="10" fill="#edf2ff" stroke="#4c6ef5" stroke-width="2"/>
+  <text x="530" y="76" font-size="15" font-weight="bold" fill="#1e3a8a" text-anchor="middle">常规模式首页搜索框输入关键词</text>
+
+  <!-- arrow A->B -->
+  <polyline points="530,96 530,120" fill="none" stroke="#868e96" stroke-width="2"/>
+  <polygon points="525,120 535,120 530,128" fill="#868e96"/>
+
+  <!-- B: dropdown -->
+  <rect x="330" y="128" width="400" height="66" rx="10" fill="#f3f0ff" stroke="#7048e8" stroke-width="2"/>
+  <text x="530" y="153" font-size="15" font-weight="bold" fill="#5f3dc4" text-anchor="middle">联想下拉：实时命中结果</text>
+  <text x="530" y="177" font-size="12" fill="#7048e8" text-anchor="middle">类型 + 摘要 + 命中原因标签 + 关联内容 chip</text>
+
+  <!-- arrow B->pill -->
+  <polyline points="530,194 530,216" fill="none" stroke="#868e96" stroke-width="2"/>
+  <polygon points="525,216 535,216 530,224" fill="#868e96"/>
+
+  <!-- pill: branch -->
+  <rect x="425" y="224" width="210" height="40" rx="20" fill="#fff3bf" stroke="#f59f00" stroke-width="2"/>
+  <text x="530" y="249" font-size="14" font-weight="bold" fill="#a35200" text-anchor="middle">按结果类型分流</text>
+
+  <!-- distribution bus -->
+  <polyline points="530,264 530,288" fill="none" stroke="#868e96" stroke-width="2"/>
+  <polyline points="150,288 910,288" fill="none" stroke="#868e96" stroke-width="2"/>
+  <polyline points="150,288 150,312" fill="none" stroke="#868e96" stroke-width="2"/>
+  <polyline points="403,288 403,312" fill="none" stroke="#868e96" stroke-width="2"/>
+  <polyline points="657,288 657,312" fill="none" stroke="#868e96" stroke-width="2"/>
+  <polyline points="910,288 910,312" fill="none" stroke="#868e96" stroke-width="2"/>
+  <polygon points="145,312 155,312 150,320" fill="#868e96"/>
+  <polygon points="398,312 408,312 403,320" fill="#868e96"/>
+  <polygon points="652,312 662,312 657,320" fill="#868e96"/>
+  <polygon points="905,312 915,312 910,320" fill="#868e96"/>
+
+  <!-- type boxes y=320..368 -->
+  <rect x="45" y="320" width="210" height="48" rx="9" fill="#ebfbee" stroke="#37b24d" stroke-width="2"/>
+  <text x="150" y="349" font-size="14" font-weight="bold" fill="#2b8a3e" text-anchor="middle">命中【POI 地点】</text>
+
+  <rect x="298" y="320" width="210" height="48" rx="9" fill="#fff4e6" stroke="#f76707" stroke-width="2"/>
+  <text x="403" y="349" font-size="14" font-weight="bold" fill="#d9480f" text-anchor="middle">命中【名人】</text>
+
+  <rect x="552" y="320" width="210" height="48" rx="9" fill="#e7f5ff" stroke="#1c7ed6" stroke-width="2"/>
+  <text x="657" y="349" font-size="14" font-weight="bold" fill="#1864ab" text-anchor="middle">命中【名作】</text>
+
+  <rect x="805" y="320" width="210" height="48" rx="9" fill="#f1f3f5" stroke="#868e96" stroke-width="2"/>
+  <text x="910" y="349" font-size="14" font-weight="bold" fill="#495057" text-anchor="middle">无结果（未命中）</text>
+
+  <!-- arrows type->outcome -->
+  <polyline points="150,368 150,396" fill="none" stroke="#868e96" stroke-width="2"/>
+  <polygon points="145,396 155,396 150,404" fill="#868e96"/>
+  <polyline points="403,368 403,396" fill="none" stroke="#868e96" stroke-width="2"/>
+  <polygon points="398,396 408,396 403,404" fill="#868e96"/>
+  <polyline points="657,368 657,396" fill="none" stroke="#868e96" stroke-width="2"/>
+  <polygon points="652,396 662,396 657,404" fill="#868e96"/>
+  <polyline points="910,368 910,396" fill="none" stroke="#868e96" stroke-width="2"/>
+  <polygon points="905,396 915,396 910,404" fill="#868e96"/>
+
+  <!-- outcome boxes y=404..484 -->
+  <rect x="40" y="404" width="220" height="80" rx="9" fill="#f4fce7" stroke="#37b24d" stroke-width="1.5"/>
+  <text x="150" y="432" font-size="13" font-weight="bold" fill="#2b8a3e" text-anchor="middle">进入常规模式</text>
+  <text x="150" y="453" font-size="12" fill="#40803a" text-anchor="middle">展示该 POI 相关卡片 /</text>
+  <text x="150" y="471" font-size="12" fill="#40803a" text-anchor="middle">内容（高亮地图点）</text>
+
+  <rect x="293" y="404" width="220" height="80" rx="9" fill="#fff8f1" stroke="#f76707" stroke-width="1.5"/>
+  <text x="403" y="432" font-size="13" font-weight="bold" fill="#d9480f" text-anchor="middle">进入常规模式</text>
+  <text x="403" y="453" font-size="12" fill="#b3510f" text-anchor="middle">展示与该名人</text>
+  <text x="403" y="471" font-size="12" fill="#b3510f" text-anchor="middle">相关的 POI</text>
+
+  <rect x="547" y="404" width="220" height="80" rx="9" fill="#f1f9ff" stroke="#1c7ed6" stroke-width="1.5"/>
+  <text x="657" y="432" font-size="13" font-weight="bold" fill="#1864ab" text-anchor="middle">进入常规模式</text>
+  <text x="657" y="453" font-size="12" fill="#1c6cb3" text-anchor="middle">展示与该名作</text>
+  <text x="657" y="471" font-size="12" fill="#1c6cb3" text-anchor="middle">相关的 POI</text>
+
+  <rect x="800" y="404" width="220" height="80" rx="9" fill="#f8f9fa" stroke="#868e96" stroke-width="1.5"/>
+  <text x="910" y="432" font-size="13" font-weight="bold" fill="#495057" text-anchor="middle">空态提示</text>
+  <text x="910" y="453" font-size="12" fill="#5c636a" text-anchor="middle">可回到浏览</text>
+  <text x="910" y="471" font-size="12" fill="#5c636a" text-anchor="middle">（卡片墙/地图/标签）</text>
+
+  <!-- arrows outcome->converge -->
+  <polyline points="150,484 150,520" fill="none" stroke="#0ca678" stroke-width="2"/>
+  <polygon points="145,520 155,520 150,528" fill="#0ca678"/>
+  <polyline points="403,484 403,520" fill="none" stroke="#0ca678" stroke-width="2"/>
+  <polygon points="398,520 408,520 403,528" fill="#0ca678"/>
+  <polyline points="657,484 657,520" fill="none" stroke="#0ca678" stroke-width="2"/>
+  <polygon points="652,520 662,520 657,528" fill="#0ca678"/>
+  <polyline points="910,484 910,520" fill="none" stroke="#495057" stroke-width="2"/>
+  <polygon points="905,520 915,520 910,528" fill="#495057"/>
+
+  <!-- converge box for 3 hit branches -->
+  <rect x="40" y="528" width="727" height="60" rx="10" fill="#e6fcf5" stroke="#0ca678" stroke-width="2"/>
+  <text x="403" y="553" font-size="14" font-weight="bold" fill="#087f5b" text-anchor="middle">常规模式 · 故事线页</text>
+  <text x="403" y="575" font-size="12" fill="#0b7285" text-anchor="middle">定位到所属故事线的对应站，高亮地图点</text>
+
+  <!-- 无结果 converge -->
+  <rect x="800" y="528" width="220" height="60" rx="10" fill="#f1f3f5" stroke="#868e96" stroke-width="2"/>
+  <text x="910" y="553" font-size="13" font-weight="bold" fill="#495057" text-anchor="middle">回到浏览视角</text>
+  <text x="910" y="575" font-size="12" fill="#5c636a" text-anchor="middle">故事线墙 / 地图 / 主题标签</text>
+
+  <!-- boundary note -->
+  <rect x="40" y="620" width="980" height="48" rx="9" fill="#fff9db" stroke="#f2c94c" stroke-width="1.5"/>
+  <text x="530" y="649" font-size="13" fill="#8a6d1b" text-anchor="middle">能力边界：搜索仅在已生成的静态内容内匹配（构建期本地索引，不做实时生成 / LLM 问答）</text>
+</svg>
