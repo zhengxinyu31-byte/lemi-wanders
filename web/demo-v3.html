@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lemi's Diary v3 Demo — 塞纳河缎带棋盘</title>
+<style>
+:root {
+  --paper: #faf7f2; --ink: #2b2723; --accent: #c0392b; --gold: #c9a227;
+  --river: #5b8cb8; --line: #e8dcc8; --night-bg: #1a1a2e; --night-ink: #e0d8c8;
+  --night-river: #2a3a5e; --touch: 44px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Noto Sans SC","PingFang SC",system-ui,sans-serif;
+  background: var(--paper); color: var(--ink);
+  min-height: 100dvh; display: flex; flex-direction: column;
+}
+body.night { background: var(--night-bg); color: var(--night-ink); }
+body.night .top-bar { border-color: #2a3550; }
+.top-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border-bottom: 1px solid var(--line);
+  gap: 8px; flex-shrink: 0;
+}
+.top-bar button, .top-bar a {
+  min-height: var(--touch); min-width: var(--touch);
+  padding: 6px 14px; border: 0; border-radius: 20px;
+  font: inherit; cursor: pointer; background: var(--line);
+  color: var(--ink); text-decoration: none; display: flex; align-items: center; gap: 4px;
+}
+.top-bar button:hover { opacity: 0.8; }
+body.night .top-bar button { background: #2a3550; color: var(--night-ink); }
+
+#board-wrap {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 12px; gap: 16px;
+}
+#board-svg { width: 100%; max-width: 700px; height: auto; }
+#board-svg .river { fill: none; stroke: var(--river); stroke-width: 60; opacity: 0.35; }
+body.night #board-svg .river { stroke: var(--night-river); }
+#board-svg .tile-poi rect.tile-box { fill: #fff; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 2 2; }
+body.night #board-svg .tile-poi rect.tile-box { fill: #2a2a40; stroke: var(--night-ink); }
+#board-svg .tile-easter circle.tile-box { fill: var(--gold); stroke: #a08020; stroke-width: 1.5; }
+#board-svg .tile-easter text { fill: #fff; font-size: 14px; text-anchor: middle; dominant-baseline: central; }
+#board-svg .tile-street rect.tile-box { fill: none; stroke: var(--ink); stroke-width: 2; stroke-dasharray: 3 3; }
+body.night #board-svg .tile-street rect.tile-box { stroke: var(--night-ink); }
+#board-svg .tile-chance rect.tile-box { fill: none; stroke: var(--accent); stroke-width: 2; }
+#board-svg .tile-chance text { fill: var(--accent); font-size: 14px; font-weight: bold; text-anchor: middle; dominant-baseline: central; }
+#board-svg .tile text.tile-label {
+  font-size: 9px; fill: var(--ink); text-anchor: middle;
+}
+body.night #board-svg .tile text.tile-label { fill: var(--night-ink); }
+#board-svg .tile.visited { opacity: 0.55; }
+#board-svg .pawn-circle { fill: var(--accent); stroke: #fff; stroke-width: 2; }
+#board-svg .pawn-text { text-anchor: middle; dominant-baseline: central; font-size: 18px; }
+
+#dice-bar { display: flex; align-items: center; gap: 16px; }
+#btn-roll {
+  width: 72px; height: 72px; border: 0; border-radius: 16px;
+  background: var(--accent); color: #fff; font-size: 28px;
+  cursor: pointer; transition: transform 0.1s;
+}
+#btn-roll:active { transform: translateY(3px); }
+#btn-roll:disabled { opacity: 0.4; transform: none; }
+#btn-roll.rolling { animation: roll 0.4s cubic-bezier(.34,1.56,.64,1); }
+@keyframes roll {
+  0% { transform: rotateX(0) rotateY(0); }
+  70% { transform: rotateX(540deg) rotateY(360deg); }
+  100% { transform: rotateX(720deg) rotateY(360deg); }
+}
+
+/* Card overlay */
+#card-overlay {
+  position: fixed; inset: 0; z-index: 20; background: rgba(0,0,0,.5);
+  display: flex; align-items: flex-end; justify-content: center;
+}
+#card-overlay.hidden { display: none; }
+#card-instance {
+  background: #fff; border-radius: 20px 20px 0 0;
+  max-height: 80dvh; width: 100%; max-width: 420px; overflow-y: auto;
+  padding: 20px; animation: slideUp 0.3s ease-out;
+}
+body.night #card-instance { background: #242440; color: var(--night-ink); }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: none; } }
+#card-instance img { width: 100%; border-radius: 10px; margin-bottom: 12px; }
+#card-instance .card-rarity { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-bottom: 8px; }
+#card-instance .card-rarity.R { background: #e8dcc8; color: #5a5040; }
+#card-instance .card-rarity.SR { background: var(--gold); color: #fff; }
+#card-instance .card-title { font-size: 22px; font-weight: bold; margin-bottom: 8px; }
+#card-instance .card-body { font-family: "Noto Serif SC",serif; font-size: 15px; line-height: 1.6; margin-bottom: 12px; }
+#card-instance .card-quote { font-family: "Ma Shan Zheng",cursive; font-size: 20px; color: #666; border-left: 3px solid var(--gold); padding-left: 12px; margin: 12px 0; }
+#card-instance .card-source { font-size: 11px; color: #999; }
+#card-instance .card-place-badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 11px; margin-top: 8px; background: #f0e8d8; }
+#card-instance .card-collect {
+  display: block; width: 100%; margin-top: 16px; padding: 14px;
+  border: 0; border-radius: 12px; font: inherit; font-size: 16px;
+  background: var(--accent); color: #fff; cursor: pointer;
+}
+
+/* Meet bar */
+#meet-bar {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  z-index: 15; display: flex; align-items: center; gap: 10px;
+}
+#meet-bar.hidden { display: none; }
+#meet-silhouette {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--ink); opacity: 0.3;
+  animation: breathe 2s ease-in-out infinite; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 24px; font-weight: bold;
+}
+body.night #meet-silhouette { background: var(--night-ink); }
+@keyframes breathe { 0%,100% { opacity: 0.3; } 50% { opacity: 0.55; } }
+#meet-bar .meet-label { font-size: 12px; opacity: 0.6; }
+
+/* Person detail overlay */
+#person-overlay {
+  position: fixed; inset: 0; z-index: 25; background: rgba(0,0,0,.5);
+  display: flex; align-items: center; justify-content: center;
+}
+#person-overlay.hidden { display: none; }
+#person-card {
+  background: #fff; border-radius: 16px; padding: 24px;
+  max-width: 340px; width: 90%; text-align: center;
+}
+body.night #person-card { background: #242440; color: var(--night-ink); }
+#person-card .person-name { font-size: 22px; font-weight: bold; margin-bottom: 4px; }
+#person-card .person-role { font-size: 13px; color: #888; margin-bottom: 4px; }
+#person-card .person-years { font-size: 12px; color: #999; margin-bottom: 12px; }
+#person-card .person-note { font-size: 14px; line-height: 1.6; margin-bottom: 16px; padding: 10px; background: #f8f4ec; border-radius: 8px; }
+body.night #person-card .person-note { background: #2a2a40; }
+#person-card .person-fictional { display: inline-block; padding: 2px 8px; background: #fce4ec; color: #c62828; border-radius: 8px; font-size: 11px; margin-bottom: 12px; }
+#person-card button {
+  padding: 10px 24px; border: 0; border-radius: 12px;
+  font: inherit; cursor: pointer; background: var(--accent); color: #fff;
+}
+
+/* Search overlay */
+#search-overlay {
+  position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,.6);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding-top: 60px;
+}
+#search-overlay.hidden { display: none; }
+#search-panel {
+  background: #fff; border-radius: 16px; padding: 20px;
+  width: 90%; max-width: 440px; max-height: 70dvh; overflow-y: auto;
+}
+body.night #search-panel { background: #242440; color: var(--night-ink); }
+#search-input {
+  width: 100%; padding: 12px 16px; border: 2px solid var(--line);
+  border-radius: 12px; font-size: 16px; background: var(--paper); color: var(--ink);
+}
+body.night #search-input { background: #1a1a2e; color: var(--night-ink); border-color: #3a3a55; }
+#search-results { margin-top: 12px; }
+.search-item {
+  padding: 12px; border-radius: 10px; cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.search-item:hover { background: #f0ece4; }
+body.night .search-item:hover { background: #2a2a40; }
+.search-item .si-name { font-weight: 600; }
+.search-item .si-sub { font-size: 12px; color: #999; }
+.search-item .si-tag { font-size: 10px; padding: 2px 6px; border-radius: 6px; background: #f0e8d8; }
+.search-empty { text-align: center; padding: 24px; color: #999; }
+/* Trajectory result */
+.traj-result { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+.traj-result h4 { margin-bottom: 8px; }
+.traj-stop { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 14px; }
+.traj-stop .ts-badge { font-size: 10px; padding: 2px 6px; border-radius: 6px; background: var(--gold); color: #fff; white-space: nowrap; }
+.traj-map-note { font-size: 12px; color: #999; margin-top: 8px; text-align: center; }
+#btn-close-search, #btn-close-person {
+  display: block; width: 100%; margin-top: 12px; padding: 10px;
+  border: 1px solid var(--line); border-radius: 10px;
+  font: inherit; cursor: pointer; background: none;
+}
+
+/* Toast */
+#toast {
+  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,.82); color: #fff; padding: 10px 20px;
+  border-radius: 20px; z-index: 40; opacity: 0; transition: opacity .2s;
+  pointer-events: none;
+}
+#toast.show { opacity: 1; }
+
+/* Album */
+#album-overlay {
+  position: fixed; inset: 0; z-index: 35; background: var(--paper);
+  padding: 16px; overflow-y: auto;
+}
+body.night #album-overlay { background: var(--night-bg); }
+#album-overlay.hidden { display: none; }
+.album-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.album-head .count { font-size: 22px; font-weight: bold; }
+.album-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; }
+.alb-slot { aspect-ratio: 3/4; border-radius: 12px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 8px; font-weight: 600; }
+.alb-slot.owned { background: #fff; border: 2px solid var(--gold); }
+body.night .alb-slot.owned { background: #2a2a40; }
+.alb-slot.locked { background: #ddd6cc; color: #a89e92; }
+body.night .alb-slot.locked { background: #1e1e30; }
+.ssr-row { margin-top: 16px; padding: 14px; border-radius: 12px; text-align: center; font-weight: bold;
+  border: 2px solid transparent;
+  background-image: linear-gradient(var(--paper),var(--paper)), linear-gradient(90deg,#f0a,#0af,#af0,#f0a);
+  background-origin: border-box; background-clip: padding-box,border-box;
+}
+body.night .ssr-row { background-image: linear-gradient(var(--night-bg),var(--night-bg)), linear-gradient(90deg,#f0a,#0af,#af0,#f0a); }
+
+#daypart { font-size: 14px; opacity: 0.8; }
+
+@media (prefers-reduced-motion: reduce) {
+  #btn-roll.rolling { animation: none; }
+  #card-instance { animation: none; }
+  #meet-silhouette { animation: none; }
+}
+
+@media (min-width: 860px) {
+  .top-bar { padding: 8px 24px; }
+  #card-instance { border-radius: 20px; max-height: 85dvh; }
+}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <span id="daypart">☀️ 白天</span>
+  <button id="btn-album">🗂️ 卡册 <span id="album-count">0/10</span></button>
+  <button id="btn-search">🔍 搜索</button>
+  <a href="codex.html">📖 常规模式</a>
+</div>
+<div id="board-wrap">
+  <svg id="board-svg" viewBox="0 0 700 500" preserveAspectRatio="xMidYMid meet"></svg>
+  <div id="dice-bar"><button id="btn-roll" aria-label="摇骰子">🎲</button></div>
+</div>
+<div id="card-overlay" class="hidden"><div id="card-instance"></div></div>
+<div id="meet-bar" class="hidden"><div class="meet-label">遇见的人</div><div id="meet-silhouette">?</div></div>
+<div id="person-overlay" class="hidden"><div id="person-card"></div></div>
+<div id="search-overlay" class="hidden">
+  <div id="search-panel">
+    <input id="search-input" type="text" placeholder="搜索人物、角色或作品…" autocomplete="off">
+    <div id="search-results"></div>
+    <button id="btn-close-search">关闭</button>
+  </div>
+</div>
+<div id="album-overlay" class="hidden"><div class="album-head"><span class="count"></span><button id="btn-close-album">✕</button></div><div class="album-grid"></div><div class="ssr-row">SSR 🔒 0/3</div></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+// ── Hardcoded v3 demo data ──
+
+var BOARD = [
+  { index:0, type:"poi", bx:0.050, by:0.814, bank:1.0, poi_id:"place-estrapade", person_id:"emily-cooper", name:"埃斯特拉帕德广场" },
+  { index:1, type:"street", bx:0.132, by:0.769, bank:1.0, text:"巴黎人见面必说 Bonjour，进店不说是会被瞪的。" },
+  { index:2, type:"poi", bx:0.214, by:0.853, bank:1.0, poi_id:"pantheon", person_id:"victor-hugo", name:"先贤祠" },
+  { index:3, type:"easter", bx:0.295, by:0.783, bank:1.0, card_id:"paris-sr-petition" },
+  { index:4, type:"poi", bx:0.377, by:0.837, bank:1.0, poi_id:"cafe-de-flore", person_id:"jean-paul-sartre", name:"花神咖啡馆" },
+  { index:5, type:"chance", bx:0.459, by:0.515, bank:0.0, q:"巴黎地铁门是自动开的吗？", opts:["全自动","多数要手动","只有新线自动"], ans:1, explain:"巴黎多数地铁门需要自己按按钮或扳把手才能开。" },
+  { index:6, type:"poi", bx:0.541, by:0.190, bank:-1.0, poi_id:"jardin-palais-royal", person_id:"colette", name:"皇家宫殿花园" },
+  { index:7, type:"easter", bx:0.623, by:0.233, bank:-1.0, card_id:"paris-sr-existentialism" },
+  { index:8, type:"poi", bx:0.705, by:0.148, bank:-1.0, poi_id:"palais-garnier", person_id:"charles-garnier", name:"加尼叶歌剧院" },
+  { index:9, type:"poi", bx:0.786, by:0.442, bank:0.0, poi_id:"pont-alexandre-iii", person_id:"gustave-eiffel", name:"亚历山大三世桥" },
+  { index:10, type:"easter", bx:0.868, by:0.638, bank:0.7, card_id:"paris-sr-tourist-gaze" },
+  { index:11, type:"poi", bx:0.950, by:0.707, bank:1.0, poi_id:"tour-eiffel", person_id:"gustave-eiffel", name:"埃菲尔铁塔" }
+];
+
+var CARDS = {
+  "place-estrapade": { id:"paris-place-estrapade-r", rarity:"R", title:"埃斯特拉帕德广场", body:"Emily 在巴黎的家，剧中那扇绿色大门 No.1 是全球剧迷的打卡起点。剧集播出后，现实中这栋楼的居民不堪其扰——每天大量游客来门口拍照。安静的拉丁区小广场因此变成了'网红'地标。", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Place_de_l%27Estrapade_Paris.jpg/960px-Place_de_l%27Estrapade_Paris.jpg", place_role:"fictional_setting", practical:"📍 5e arrondissement · 拉丁区 · 免费参观外观" },
+  "pantheon": { id:"paris-pantheon-r", rarity:"R", title:"先贤祠", body:"安葬着伏尔泰、卢梭、雨果、左拉、居里夫人等法国伟人。原为路易十五还愿建造的教堂，大革命后改为世俗先贤祠。傅科最著名的地球自转摆实验在此进行。", quote:"祖国感念伟人", quoteSrc:"—— 先贤祠正立面铭文", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Pantheon_of_Paris_007.JPG/960px-Pantheon_of_Paris_007.JPG", place_role:"commemoration", practical:"📍 5 Pl. du Panthéon · 约11.5€ · 10:00-18:00 · 📷 从 Rue Soufflot 正对拍摄最佳" },
+  "cafe-de-flore": { id:"paris-cafe-de-flore-r", rarity:"R", title:"花神咖啡馆", body:"萨特与波伏娃在此写作、辩论，是存在主义哲学的诞生地之一；加缪、毕加索也是常客。创立于1887年，二战后成为法国知识分子的据点。", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1c/Caf%C3%A9_de_Flore.jpg/960px-Caf%C3%A9_de_Flore.jpg", place_role:"real_footprint", practical:"📍 172 Bd Saint-Germain · 咖啡约6€ · 7:30-01:30 · 📷 靠窗座位拍街景" },
+  "jardin-palais-royal": { id:"paris-jardin-palais-royal-r", rarity:"R", title:"皇家宫殿花园", body:"Emily 与 Mindy 散步的取景地——布伦柱（Colonnes de Buren）黑白条纹圆柱是巴黎最出片的现代艺术装置之一。花园原为红衣主教黎塞留的宫殿花园，1780年代向公众开放。", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Colonnes_de_Buren_et_Conseil_d%27Etat.jpg/960px-Colonnes_de_Buren_et_Conseil_d%27Etat.jpg", place_role:"fictional_setting", practical:"📍 2 Galerie de Montpensier · 免费 · 8:00-20:30 · 📷 布伦柱上午光线柔和" },
+  "palais-garnier": { id:"paris-palais-garnier-r", rarity:"R", title:"加尼叶歌剧院", body:"Emily 在巴黎第一次看歌剧的地方。由建筑师夏尔·加尼叶设计的新巴洛克杰作，穹顶壁画为马克·夏加尔所作。勒鲁的《歌剧魅影》即以这里为舞台。", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Op%C3%A9ra_Garnier_Grand_Escalier.jpg/960px-Op%C3%A9ra_Garnier_Grand_Escalier.jpg", place_role:"real_footprint", practical:"📍 8 Rue Scribe · 参观约14€ · 10:00-17:00 · 📷 大楼梯和观众厅必拍" },
+  "pont-alexandre-iii": { id:"paris-pont-alexandre-iii-r", rarity:"R", title:"亚历山大三世桥", body:"巴黎最华丽的桥，以俄国沙皇亚历山大三世命名，1900年世博会前落成。镀金飞马、仙女灯柱与铁塔同框是巴黎最经典的日落取景。Emily与Gabriel曾在此散步。", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Pont_Alexandre_III%2C_Paris_4.jpg/960px-Pont_Alexandre_III%2C_Paris_4.jpg", place_role:"fictional_setting", practical:"📍 连接荣军院与大皇宫 · 免费 · 全天 · 📷 日落前1小时最出片" },
+  "tour-eiffel": { id:"paris-tour-eiffel-r", rarity:"R", title:"埃菲尔铁塔", body:"古斯塔夫·埃菲尔为1889年世博会建造，曾遭莫泊桑等艺术家联名抗议，称其为'铁怪物'。如今是巴黎第一地标，夜间整点有5分钟闪灯秀。Emily 在 Trocadéro 广场拍了无数张铁塔照。", img:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg/960px-Tour_Eiffel_Wikimedia_Commons_%28cropped%29.jpg", place_role:"real_footprint", practical:"📍 Champ de Mars · 登塔18-29€ · 9:00-23:45 · 📷 Trocadéro 广场机位最佳" },
+  "paris-sr-petition": { id:"paris-sr-petition", rarity:"SR", title:"反铁塔抗议书", body:"1887年，莫泊桑、小仲马、加尼叶等47位艺术家联名上书抗议铁塔建造，称其为'巴黎的耻辱'。讽刺的是，铁塔建成后莫泊桑却成了铁塔餐厅的常客——他说'这是巴黎唯一看不见铁塔的地方'。", place_role:"real_footprint", practical:"" },
+  "paris-sr-existentialism": { id:"paris-sr-existentialism", rarity:"SR", title:"存在主义咖啡", body:"萨特和波伏娃在花神与双叟写下《存在与虚无》《第二性》。波伏娃说：'我们在这里度过了战争，在咖啡馆里发明了我们的自由。'1949年《第二性》出版，成为女权主义奠基之作。", place_role:"real_footprint", practical:"" },
+  "paris-sr-tourist-gaze": { id:"paris-sr-tourist-gaze", rarity:"SR", title:"游客凝视与反向凝视", body:"John Urry 在《游客凝视》中提出：游客的相机不仅是记录工具，更构建了'什么是值得看的'。Emily 的 Instagram 完美诠释了这一点——她在拍巴黎，巴黎人也在拍她。", place_role:"fictional_setting", practical:"" }
+};
+
+var PEOPLE = {
+  "emily-cooper": { id:"emily-cooper", name:"艾米莉", nameEn:"Emily Cooper", role:"剧集虚构主角", years:"", note:"Emily 在巴黎的家就在埃斯特拉帕德广场——那扇绿色大门。", isFictional:true },
+  "victor-hugo": { id:"victor-hugo", name:"维克多·雨果", nameEn:"Victor Hugo", role:"作家", years:"1802-1885", note:"雨果安葬于先贤祠。他写下《悲惨世界》，描绘了巴黎的街垒、下水道与革命。", isFictional:false },
+  "jean-paul-sartre": { id:"jean-paul-sartre", name:"让-保罗·萨特", nameEn:"Jean-Paul Sartre", role:"哲学家/作家", years:"1905-1980", note:"萨特与波伏娃在花神咖啡馆写作、辩论多年。他说：'我们在这里度过了战争。'", isFictional:false },
+  "colette": { id:"colette", name:"科莱特", nameEn:"Colette", role:"作家", years:"1873-1954", note:"科莱特住在皇家宫殿花园附近，她的窗口正对着花园。她写下《我窗前的巴黎》。", isFictional:false },
+  "charles-garnier": { id:"charles-garnier", name:"夏尔·加尼叶", nameEn:"Charles Garnier", role:"建筑师", years:"1825-1898", note:"加尼叶设计了这座新巴洛克杰作。他也签署了反铁塔的抗议书——但歌剧院本身也用了当时最新的铁框架技术。", isFictional:false },
+  "gustave-eiffel": { id:"gustave-eiffel", name:"古斯塔夫·埃菲尔", nameEn:"Gustave Eiffel", role:"工程师", years:"1832-1923", note:"埃菲尔建造了巴黎最著名的地标和一座华丽的桥。铁塔曾遭47位艺术家联名抗议——但今天没人能想象没有它的巴黎。", isFictional:false }
+};
+
+var RELATIONS = {
+  "emily-cooper": [{poi:"埃斯特拉帕德广场", note:"Emily 的巴黎住所，那扇绿色大门", place_role:"fictional_setting"},{poi:"皇家宫殿花园", note:"与 Mindy 散步的取景地", place_role:"fictional_setting"},{poi:"亚历山大三世桥", note:"与 Gabriel 散步", place_role:"fictional_setting"},{poi:"埃菲尔铁塔", note:"拍了无数张铁塔照", place_role:"fictional_setting"},{poi:"加尼叶歌剧院", note:"第一次在巴黎看歌剧", place_role:"fictional_setting"}],
+  "victor-hugo": [{poi:"先贤祠", note:"安葬于此", place_role:"commemoration"}],
+  "jean-paul-sartre": [{poi:"花神咖啡馆", note:"在此写作、辩论多年", place_role:"real_footprint"}],
+  "colette": [{poi:"皇家宫殿花园", note:"住在花园附近，窗口正对花园", place_role:"real_footprint"}],
+  "charles-garnier": [{poi:"加尼叶歌剧院", note:"设计者", place_role:"real_footprint"}],
+  "gustave-eiffel": [{poi:"埃菲尔铁塔", note:"建造者", place_role:"real_footprint"},{poi:"亚历山大三世桥", note:"同时代的工程杰作", place_role:"real_footprint"}]
+};
+
+var WORKS = [
+  {id:"les-miserables", title:"悲惨世界", original:"Les Misérables", type:"小说", author:"维克多·雨果", authorId:"victor-hugo", pois:["先贤祠"]},
+  {id:"le-fantome", title:"歌剧魅影", original:"Le Fantôme de l'Opéra", type:"小说", author:"加斯东·勒鲁", authorId:"gaston-leroux", pois:["加尼叶歌剧院"]},
+  {id:"le-deuxieme-sexe", title:"第二性", original:"Le Deuxième Sexe", type:"哲学", author:"西蒙娜·德·波伏娃", authorId:"simone-de-beauvoir", pois:["花神咖啡馆"]},
+  {id:"emily-in-paris-show", title:"艾米莉在巴黎", original:"Emily in Paris", type:"电视剧", author:"Darren Star", authorId:"", pois:["埃斯特拉帕德广场","皇家宫殿花园","加尼叶歌剧院","亚历山大三世桥","埃菲尔铁塔"]},
+  {id:"paris-a-ma-fenetre", title:"我窗前的巴黎", original:"Paris à ma fenêtre", type:"散文", author:"科莱特", authorId:"colette", pois:["皇家宫殿花园"]}
+];
+
+var ALL_PEOPLE_IDS = Object.keys(PEOPLE);
+
+// ── State ──
+var pos = 0;
+var night = false;
+var rolling = false;
+var ownCards = {};
+var metPeople = {};
+var pendingPerson = null;
+var ssrShards = 0;
+var NIGHT_FROM = 9;
+var TOTAL_CARDS = 10;
+
+function saveState() {
+  try {
+    localStorage.setItem("lemi_v3_demo", JSON.stringify({
+      pos: pos, night: night, ownCards: Object.keys(ownCards),
+      metPeople: Object.keys(metPeople), ssrShards: ssrShards
+    }));
+  } catch(e) {}
+}
+function loadState() {
+  try {
+    var raw = localStorage.getItem("lemi_v3_demo");
+    if (!raw) return;
+    var d = JSON.parse(raw);
+    pos = d.pos || 0; night = d.night || false; ssrShards = d.ssrShards || 0;
+    (d.ownCards||[]).forEach(function(id){ ownCards[id]=true; });
+    (d.metPeople||[]).forEach(function(id){ metPeople[id]=true; });
+  } catch(e) {}
+}
+
+function ownCount() { return Object.keys(ownCards).length; }
+function isOwned(id) { return !!ownCards[id]; }
+function isMet(id) { return !!metPeople[id]; }
+
+// ── SVG Board ──
+var svg = document.getElementById("board-svg");
+var W=700, H=500, M=40;
+
+function yRiver(nx) { return 0.50 + 0.06 * Math.sin(2*Math.PI*nx); }
+
+function buildRiverPath() {
+  var pts = [];
+  for (var x=0; x<=W; x+=10) { pts.push(x+","+(yRiver(x/W)*H)); }
+  return "M "+pts.join(" L ");
+}
+
+function svgX(bx) { return M + bx*(W-2*M); }
+function svgY(by) { return M + by*(H-2*M); }
+
+function renderBoard() {
+  svg.innerHTML = "";
+  // Paper background
+  var bg = mkEl("rect", {x:0,y:0,width:W,height:H,fill:"var(--paper)","class":"board-bg"});
+  svg.appendChild(bg);
+  bodyNight();
+  // River
+  var river = mkEl("path", {d:buildRiverPath(),"class":"river"});
+  svg.appendChild(river);
+  // Tiles
+  for (var i=0; i<BOARD.length; i++) {
+    var t = BOARD[i];
+    var g = mkEl("g", {"class":"tile tile-"+t.type+(i<pos?" visited":""),"transform":"translate("+svgX(t.bx)+","+svgY(t.by)+")"});
+    if (t.type==="poi") {
+      g.appendChild(mkEl("rect", {x:-18,y:-22,width:36,height:44,rx:3,"class":"tile-box"}));
+      var lbl = mkEl("text", {y:32,"class":"tile-label"}); lbl.textContent = t.name.substring(0,4);
+      g.appendChild(lbl);
+    } else if (t.type==="easter") {
+      g.appendChild(mkEl("circle", {r:14,"class":"tile-box"}));
+      var star = mkEl("text", {}); star.textContent = "\u2605"; g.appendChild(star);
+    } else if (t.type==="street") {
+      g.appendChild(mkEl("rect", {x:-14,y:-14,width:28,height:28,rx:2,"class":"tile-box"}));
+    } else if (t.type==="chance") {
+      g.appendChild(mkEl("rect", {x:-14,y:-14,width:28,height:28,rx:2,"class":"tile-box"}));
+      var qm = mkEl("text", {}); qm.textContent = "?"; g.appendChild(qm);
+    }
+    svg.appendChild(g);
+  }
+  // Path lines
+  var pathG = mkEl("g", {"class":"tile-paths"});
+  for (var j=0; j<BOARD.length-1; j++) {
+    var line = mkEl("line", {
+      x1:svgX(BOARD[j].bx), y1:svgY(BOARD[j].by),
+      x2:svgX(BOARD[j+1].bx), y2:svgY(BOARD[j+1].by),
+      stroke: j<pos ? "var(--accent)" : "var(--line)", "stroke-width":1.5,
+      "stroke-dasharray": j<pos ? "none" : "4 4"
+    });
+    pathG.appendChild(line);
+  }
+  svg.appendChild(pathG);
+  // Pawn
+  var pawn = mkEl("g", {id:"pawn-g",transform:"translate("+svgX(BOARD[pos].bx)+","+svgY(BOARD[pos].by)+")"});
+  pawn.appendChild(mkEl("circle", {r:14,"class":"pawn-circle"}));
+  var pt = mkEl("text", {"class":"pawn-text"}); pt.textContent = "\uD83D\uDC39"; // 🐹
+  pawn.appendChild(pt);
+  svg.appendChild(pawn);
+  // Update daypart text
+  document.getElementById("daypart").textContent = night ? "\uD83C\uDF03 夜晚" : "\u2600\uFE0F 白天";
+  document.getElementById("album-count").textContent = ownCount()+"/"+TOTAL_CARDS;
+}
+
+function bodyNight() {
+  if (night) { document.body.classList.add("night"); }
+  else { document.body.classList.remove("night"); }
+}
+
+function animatePawn(toIdx, cb) {
+  var pawn = document.getElementById("pawn-g");
+  if (!pawn) { cb(); return; }
+  var t = BOARD[toIdx];
+  var tx = svgX(t.bx), ty = svgY(t.by);
+  pawn.setAttribute("transform","translate("+tx+","+ty+")");
+  pawn.style.transition = "transform 0.4s ease-in-out";
+  setTimeout(function(){ pawn.style.transition = ""; cb(); }, 450);
+}
+
+// ── mkEl helper ──
+function mkEl(tag, attrs) {
+  var el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (var k in attrs) { el.setAttribute(k, attrs[k]); }
+  return el;
+}
+
+// ── Card ──
+function showCard(cardId, cb) {
+  var c = CARDS[cardId];
+  if (!c) { cb(); return; }
+  var isNew = !isOwned(cardId);
+  var ov = document.getElementById("card-overlay");
+  var inst = document.getElementById("card-instance");
+  var html = '';
+  if (c.img) html += '<img src="'+c.img+'" alt="" onerror="this.style.display=\'none\'">';
+  html += '<span class="card-rarity '+c.rarity+'">'+c.rarity+'</span>';
+  html += '<div class="card-title">'+c.title+'</div>';
+  if (c.practical) html += '<div style="font-size:12px;color:#888;margin-bottom:8px;">'+c.practical+'</div>';
+  html += '<div class="card-body">'+c.body+'</div>';
+  if (c.quote) html += '<div class="card-quote">'+c.quote+'</div><div class="card-source">'+c.quoteSrc+'</div>';
+  if (c.place_role) {
+    var badges = {fictional_setting:"🎭 虚构取景", real_footprint:"👣 真实足迹", commemoration:"🕯 纪念"};
+    html += '<div class="card-place-badge">'+(badges[c.place_role]||c.place_role)+'</div>';
+  }
+  if (isNew) {
+    html += '<button class="card-collect" id="btn-collect">收入卡册</button>';
+  } else {
+    html += '<button class="card-collect" id="btn-collect">关闭（已拥有）</button>';
+  }
+  inst.innerHTML = html;
+  ov.classList.remove("hidden");
+  document.getElementById("btn-collect").addEventListener("click", function(){
+    if (isNew) {
+      ownCards[cardId] = true;
+      saveState();
+      showToast("已收入卡册");
+    }
+    ov.classList.add("hidden");
+    if (cb) cb();
+  });
+}
+
+// ── Meet Person ──
+var meetResolve = null;
+function showMeetPerson(personId) {
+  if (!personId || isMet(personId)) return;
+  pendingPerson = personId;
+  var bar = document.getElementById("meet-bar");
+  bar.classList.remove("hidden");
+  document.getElementById("meet-silhouette").textContent = "?";
+}
+
+function showPersonDetail() {
+  if (!pendingPerson) return;
+  var p = PEOPLE[pendingPerson];
+  if (!p) return;
+  var pc = document.getElementById("person-card");
+  var html = '';
+  if (p.isFictional) html += '<div class="person-fictional">🎭 剧中角色</div>';
+  html += '<div class="person-name">'+p.name+'</div>';
+  html += '<div class="person-role">'+p.role+'</div>';
+  if (p.years) html += '<div class="person-years">'+p.years+'</div>';
+  html += '<div class="person-note">'+p.note+'</div>';
+  html += '<button id="btn-close-person">我知道了</button>';
+  pc.innerHTML = html;
+  document.getElementById("person-overlay").classList.remove("hidden");
+  document.getElementById("btn-close-person").addEventListener("click", function(){
+    metPeople[pendingPerson] = true;
+    pendingPerson = null;
+    saveState();
+    document.getElementById("person-overlay").classList.add("hidden");
+    document.getElementById("meet-bar").classList.add("hidden");
+  });
+}
+
+document.getElementById("meet-silhouette").addEventListener("click", showPersonDetail);
+
+// ── Search ──
+var searchData = [];
+(function buildSearchIndex(){
+  ALL_PEOPLE_IDS.forEach(function(id){
+    var p = PEOPLE[id];
+    searchData.push({type:"person", id:id, name:p.name, nameEn:p.nameEn, sub:p.role, isFictional:p.isFictional, relations:RELATIONS[id]||[]});
+  });
+  WORKS.forEach(function(w){
+    searchData.push({type:"work", id:w.id, name:w.title, nameEn:w.original, sub:w.type+" · "+w.author, relations:w.pois.map(function(poiName){
+      return {poi:poiName, note:"出自《"+w.title+"》", place_role:"fictional_setting"};
+    })});
+  });
+})();
+
+function doSearch(q) {
+  q = (q||"").toLowerCase().trim();
+  var res = document.getElementById("search-results");
+  if (!q) { res.innerHTML = ""; return; }
+  var hits = [];
+  searchData.forEach(function(item){
+    if ((item.name+item.nameEn+item.sub).toLowerCase().indexOf(q)!==-1) hits.push(item);
+  });
+  if (hits.length===0) {
+    res.innerHTML = '<div class="search-empty">暂无 ta 的动线</div>';
+  } else {
+    var html = '';
+    hits.forEach(function(h){
+      html += '<div class="search-item" data-id="'+h.id+'" data-type="'+h.type+'"><div><div class="si-name">'+h.name+(h.isFictional?' 🎭':'')+'</div><div class="si-sub">'+h.sub+'</div></div><span class="si-tag">'+(h.type==="person"?"人物":"作品")+'</span></div>';
+    });
+    res.innerHTML = html;
+    res.querySelectorAll(".search-item").forEach(function(el){
+      el.addEventListener("click", function(){
+        showTrajectory(el.dataset.id, el.dataset.type);
+      });
+    });
+  }
+}
+
+function showTrajectory(id, type) {
+  var entity;
+  if (type==="person") { entity = PEOPLE[id]; entity.relations = RELATIONS[id]||[]; entity.type="person"; }
+  else {
+    WORKS.forEach(function(w){ if (w.id===id) { entity = w; entity.type="work"; } });
+  }
+  if (!entity || !entity.relations || entity.relations.length===0) {
+    document.getElementById("search-results").innerHTML = '<div class="search-empty">暂无地图动线</div>';
+    return;
+  }
+  var html = '<div class="traj-result"><h4>'+entity.name+' 的巴黎动线</h4>';
+  entity.relations.forEach(function(r){
+    html += '<div class="traj-stop"><span class="ts-badge">'+(r.place_role==="fictional_setting"?"🎭":"👣")+'</span> '+r.poi+'</div>';
+    html += '<div style="font-size:12px;color:#999;padding-left:36px;margin-bottom:2px;">'+r.note+'</div>';
+  });
+  html += '<div class="traj-map-note">（完整地图动线请访问常规模式查看）</div></div>';
+  document.getElementById("search-results").innerHTML = html;
+}
+
+document.getElementById("search-input").addEventListener("input", function(){
+  doSearch(this.value);
+});
+
+// ── Dice & Game ──
+function rollDice() { return Math.floor(Math.random()*6)+1; }
+
+function playTurn() {
+  if (rolling || pos >= BOARD.length-1) return;
+  rolling = true;
+  var btn = document.getElementById("btn-roll");
+  btn.disabled = true;
+  btn.classList.add("rolling");
+  setTimeout(function(){
+    btn.classList.remove("rolling");
+    var steps = rollDice();
+    var newPos = Math.min(pos + steps, BOARD.length-1);
+    walkPath(pos+1, newPos);
+  }, 400);
+}
+
+function walkPath(fromIdx, toIdx) {
+  if (fromIdx > toIdx) { rolling=false; document.getElementById("btn-roll").disabled=false; return; }
+  var tile = BOARD[fromIdx];
+  animatePawn(fromIdx, function(){
+    pos = fromIdx;
+    // Night check
+    if (!night && pos >= NIGHT_FROM) { night = true; bodyNight(); }
+    saveState();
+    renderBoard();
+    // Trigger tile
+    triggerTile(fromIdx, function(){
+      walkPath(fromIdx+1, toIdx);
+    });
+  });
+}
+
+function triggerTile(idx, cb) {
+  var t = BOARD[idx];
+  if (t.type==="poi") {
+    showCard(t.poi_id, function(){
+      if (t.person_id && !isMet(t.person_id) && !pendingPerson) showMeetPerson(t.person_id);
+      cb();
+    });
+  } else if (t.type==="easter") {
+    showCard(t.card_id, function(){ cb(); });
+  } else if (t.type==="street") {
+    showToast(t.text||"");
+    setTimeout(cb, 1500);
+  } else if (t.type==="chance") {
+    var ans = prompt((t.q||"")+"\n\n"+(t.opts||[]).map(function(o,i){ return (i+1)+". "+o; }).join("\n"));
+    var correct = ans && parseInt(ans,10)===t.ans+1;
+    showToast(correct ? "✓ "+t.explain : "✗ "+(t.opts[t.ans])+" — "+t.explain);
+    setTimeout(cb, 1500);
+  } else { cb(); }
+  // Check completion
+  if (pos >= BOARD.length-1) {
+    setTimeout(function(){
+      ssrShards++;
+      saveState();
+      showToast("完整的一天！SSR 碎片 +1 (共 "+ssrShards+"/3)");
+    }, 500);
+  }
+}
+
+function showToast(msg) {
+  var el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  setTimeout(function(){ el.classList.remove("show"); }, 1800);
+}
+
+// ── Album ──
+function renderAlbum() {
+  var ov = document.getElementById("album-overlay");
+  ov.querySelector(".count").textContent = ownCount()+"/"+TOTAL_CARDS;
+  var grid = ov.querySelector(".album-grid");
+  grid.innerHTML = "";
+  var allCards = BOARD.filter(function(t){ return t.type==="poi"||t.type==="easter"; });
+  allCards.forEach(function(t){
+    var cardId = t.poi_id||t.card_id;
+    var c = CARDS[cardId];
+    var div = document.createElement("div");
+    div.className = "alb-slot "+(isOwned(cardId)?"owned":"locked");
+    div.textContent = isOwned(cardId) ? (c?c.title:"") : "?";
+    grid.appendChild(div);
+  });
+  ov.querySelector(".ssr-row").textContent = "SSR "+(ssrShards>=3 ? "已解锁！" : "🔒 "+ssrShards+"/3");
+  ov.classList.remove("hidden");
+}
+
+// ── Events ──
+document.getElementById("btn-roll").addEventListener("click", playTurn);
+document.getElementById("btn-album").addEventListener("click", renderAlbum);
+document.getElementById("btn-close-album").addEventListener("click", function(){
+  document.getElementById("album-overlay").classList.add("hidden");
+});
+document.getElementById("btn-search").addEventListener("click", function(){
+  document.getElementById("search-overlay").classList.remove("hidden");
+  document.getElementById("search-input").focus();
+});
+document.getElementById("btn-close-search").addEventListener("click", function(){
+  document.getElementById("search-overlay").classList.add("hidden");
+  document.getElementById("search-input").value = "";
+  document.getElementById("search-results").innerHTML = "";
+});
+// Close overlays on Escape
+document.addEventListener("keydown", function(ev){
+  if (ev.key==="Escape") {
+    document.getElementById("card-overlay").classList.add("hidden");
+    document.getElementById("person-overlay").classList.add("hidden");
+    document.getElementById("search-overlay").classList.add("hidden");
+    document.getElementById("album-overlay").classList.add("hidden");
+  }
+});
+
+// ── Init ──
+loadState();
+renderBoard();
+if (pos===0 && ownCount()===0) {
+  // First visit: show opening card
+  setTimeout(function(){ showCard("place-estrapade", function(){
+    if (BOARD[0].person_id && !isMet(BOARD[0].person_id)) showMeetPerson(BOARD[0].person_id);
+  }); }, 800);
+}
+})();
+</script>
+</body>
+</html>
