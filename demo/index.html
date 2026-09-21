@@ -1,779 +1,463 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lemi's Diary · 旅行故事线（对标 storymap 全链路）</title>
-<link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet">
+<title>Lemi 巴黎 · 16 种人格的旅行手账</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
 <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,500&family=Dancing+Script:wght@600;700&family=Noto+Serif+SC:wght@400;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="paris-data.js"></script>
+<script src="paris-routes.js"></script>
 <style>
 :root{
-  --gold:#C5A572;--gold-deep:#A6864F;--rose:#D98C90;--rose-soft:#F3DEDC;
-  --seine:#8FA3B0;--seine-deep:#5E7688;
-  --cream:#F7F1E7;--paper:#FCFAF5;--ink:#3A342B;--ink-soft:#867B69;--line:#EADFCC;
-  --r-lg:18px;--r-md:12px;--r-sm:8px;
-  --fd:"Playfair Display",serif;--fs:"Noto Serif SC",serif;--fu:"Noto Sans SC",sans-serif;--fh:"Dancing Script",cursive;
+  --ink:#2b2620; --paper:#f5efe3; --paper2:#efe7d6; --champ:#c9a45c;
+  --rose:#b06a6f; --seine:#4a6f7a; --muted:#8a8073; --line:#d9cfb8;
+  --shadow:0 18px 50px rgba(43,38,32,.18);
+  --serif:"Songti SC","Noto Serif SC",Georgia,"Times New Roman",serif;
+  --sans:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{font-family:var(--fu);color:var(--ink);background:var(--cream);overflow:hidden}
-.app{height:100vh;display:flex;flex-direction:column}
-.topbar{height:54px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:var(--paper);border-bottom:1px solid var(--line);z-index:30}
-.brand{font-family:var(--fd);font-weight:700;font-size:1.15rem;display:flex;align-items:center;gap:9px;cursor:pointer}
-.hamster{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#f0d9a8,#c99a5a);border:1.5px solid #a97e42;position:relative;flex-shrink:0}
-.hamster::after{content:"";position:absolute;top:-4px;left:3px;width:22px;height:8px;background:var(--seine-deep);border-radius:8px 8px 3px 3px;transform:rotate(-8deg)}
-.brand small{font-family:var(--fh);color:var(--rose);font-size:.95rem;margin-left:2px}
-.top-right{display:flex;align-items:center;gap:12px}
-.crumb{font-size:.74rem;color:var(--ink-soft);display:flex;gap:6px;align-items:center}
-.crumb b{color:var(--gold-deep)}.crumb .sep{opacity:.5}
-.lang{font-size:.74rem;font-weight:700;color:var(--ink-soft);cursor:pointer;border:1px solid var(--line);border-radius:14px;padding:5px 11px;background:var(--paper)}
-.lang:hover{border-color:var(--gold)}
-.views{flex:1;position:relative;overflow:hidden}
-.view{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .4s}
-.view.active{opacity:1;pointer-events:auto}
-@keyframes pulse2{0%{box-shadow:0 0 0 0 rgba(217,140,144,.6)}100%{box-shadow:0 0 0 16px rgba(217,140,144,0)}}
-/* WORLD */
-.world{position:absolute;inset:0}
-.w-ov{position:absolute;top:26px;left:0;right:0;text-align:center;pointer-events:none;padding:0 20px;z-index:5}
-.w-ov h1{font-family:var(--fd);font-style:italic;font-size:1.9rem;color:var(--ink);text-shadow:0 2px 12px #fff,0 0 30px #fff}
-.w-ov p{font-family:var(--fs);font-size:.82rem;color:var(--ink);margin-top:6px;text-shadow:0 1px 8px #fff,0 0 20px #fff}
-/* HUB */
-.hub{position:absolute;inset:0;overflow:auto;background:var(--paper)}
-.hub-in{max-width:1140px;margin:0 auto;padding:24px 30px 56px}
-.hub-search{position:relative;max-width:540px;margin:0 auto}
-.chs{display:flex;align-items:center;gap:10px;background:var(--cream);border:1px solid var(--line);border-radius:24px;padding:12px 18px}
-.chs:focus-within{border-color:var(--gold);box-shadow:0 0 0 4px var(--rose-soft)}
-.chs .mag{width:16px;height:16px;border:2px solid var(--seine-deep);border-radius:50%;position:relative;flex-shrink:0}
-.chs .mag::after{content:"";position:absolute;width:6px;height:2px;background:var(--seine-deep);bottom:-3px;right:-4px;transform:rotate(45deg)}
-.chs input{border:none;background:none;outline:none;font-family:var(--fu);font-size:.9rem;color:var(--ink);width:100%}
-.stats{display:flex;justify-content:center;gap:24px;margin:16px 0 20px;font-size:.7rem;color:var(--ink-soft)}
-.stats b{font-family:var(--fd);color:var(--gold-deep);font-size:1rem;margin-right:4px}
-.tabs{display:flex;gap:8px;justify-content:center;margin-bottom:22px;flex-wrap:wrap}
-.tabs button{font-family:var(--fu);font-size:.74rem;font-weight:700;padding:8px 15px;border-radius:16px;background:var(--cream);color:var(--ink-soft);border:1px solid var(--line);cursor:pointer;transition:.2s}
-.tabs button.on{background:var(--gold);color:#fff;border-color:var(--gold-deep)}
-.suggest{position:absolute;left:0;right:0;top:50px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:0 16px 38px -18px rgba(120,90,50,.5);overflow:hidden;display:none;z-index:12}
-.suggest.show{display:block}
-.sg{display:flex;align-items:center;gap:11px;padding:10px 15px;border-bottom:1px solid var(--line);cursor:pointer}
-.sg:last-child{border-bottom:none}.sg:hover,.sg.hl{background:var(--cream)}
-.sgt{font-size:.56rem;font-weight:700;color:#fff;border-radius:7px;padding:2px 6px;flex-shrink:0}
-.sgt.poi{background:var(--rose)}.sgt.person{background:var(--seine-deep)}.sgt.work{background:var(--gold-deep)}
-.sgb{flex:1}.sgb .nm{font-weight:700;font-size:.83rem}.sgb .ds{font-size:.66rem;color:var(--ink-soft)}
-.sgc{font-size:.56rem;color:var(--gold-deep);background:var(--rose-soft);border-radius:7px;padding:2px 6px}
-.sgr{font-size:.58rem;color:var(--seine-deep);background:var(--cream);border:1px solid var(--line);border-radius:7px;padding:2px 6px}
-.sg.wait{opacity:.6}.sg.wait .wb{font-size:.54rem;font-weight:700;color:#fff;background:#b3ab99;border-radius:7px;padding:2px 6px}
-.wall{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-@media(max-width:880px){.wall{grid-template-columns:1fr 1fr}}
-.sc{border-radius:var(--r-md);overflow:hidden;background:#fff;border:1px solid var(--line);cursor:pointer;box-shadow:0 12px 28px -20px rgba(120,90,50,.6);transition:transform .25s,box-shadow .25s}
-.sc:hover{transform:translateY(-4px);box-shadow:0 20px 40px -20px rgba(120,90,50,.7)}
-.sc .po{height:142px;position:relative;display:flex;align-items:flex-end;padding:13px;background:linear-gradient(135deg,var(--rose),var(--gold));background-size:cover;background-position:center}
-.sc .po::before{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(40,28,12,.72),transparent 62%)}
-.sc .po h3{font-family:var(--fd);font-style:italic;color:#fff;font-size:1.25rem;line-height:1.05;text-shadow:0 2px 10px rgba(0,0,0,.5);position:relative;z-index:1}
-.sc .pm{position:absolute;bottom:11px;right:11px;width:42px;height:42px;border-radius:50%;border:2px dashed rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:.5rem;color:#fff;transform:rotate(-12deg);text-align:center;line-height:1;z-index:1}
-.sc .bd{padding:12px 14px}
-.sc .mt{display:flex;gap:9px;font-size:.62rem;color:var(--ink-soft);margin-bottom:6px}
-.sc .mt .pin{color:var(--rose);font-weight:700}
-.sc .ch{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
-.sc .ch span{font-size:.56rem;color:var(--gold-deep);background:var(--rose-soft);border-radius:7px;padding:2px 6px}
-.sc .de{font-family:var(--fs);font-size:.78rem;color:var(--ink-soft);line-height:1.55}
-.sc.locked{opacity:.6}.sc.locked .po{background:linear-gradient(135deg,#c9c2b4,#a59d8c)}
-.lk{position:absolute;top:9px;left:10px;background:rgba(58,52,43,.75);color:#fff;font-size:.54rem;font-weight:700;border-radius:11px;padding:3px 8px;z-index:1}
-/* timeline view */
-.tl-hint{text-align:center;font-size:.72rem;color:var(--ink-soft);margin-bottom:18px}
-.tl{max-width:760px;margin:0 auto}
-.tl-ch{margin-bottom:26px;position:relative;padding-left:20px;border-left:2px solid var(--line)}
-.tl-cn{font-family:var(--fd);font-style:italic;font-size:1.05rem;color:var(--gold-deep);margin-bottom:12px}
-.tl-cn::before{content:"";position:absolute;left:-7px;width:12px;height:12px;border-radius:50%;background:var(--gold);border:2px solid var(--paper)}
-.tl-row{display:flex;flex-wrap:wrap;gap:14px}
-.tl-star{cursor:pointer;text-align:center;transition:transform .2s}
-.tl-star:hover{transform:translateY(-3px)}
-.tl-dot{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fbe6c0,var(--gold));color:#fff;font-family:var(--fd);font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px -4px var(--gold-deep);border:2px solid #fff;margin:0 auto}
-.tl-nm{font-size:.64rem;color:var(--ink);margin-top:5px;max-width:74px}
-/* filters */
-.filters{display:flex;gap:7px;justify-content:center;margin-bottom:14px;flex-wrap:wrap}
-.fb{font-family:var(--fu);font-size:.7rem;font-weight:700;padding:6px 13px;border-radius:14px;background:var(--cream);color:var(--ink-soft);border:1px solid var(--line);cursor:pointer;transition:.2s}
-.fb.on{background:var(--rose);color:#fff;border-color:var(--rose)}
-.home-map{height:440px;border-radius:var(--r-md);overflow:hidden;position:relative;border:1px solid var(--line)}
-.legend{position:absolute;left:12px;bottom:12px;background:rgba(252,250,245,.93);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 11px;font-size:.64rem;color:var(--ink-soft);z-index:4}
-.legend .d{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:var(--rose)}
-.theme{display:flex;flex-wrap:wrap;gap:11px}
-.tc{font-family:var(--fu);font-size:.8rem;font-weight:700;color:var(--ink);background:var(--cream);border:1px solid var(--line);border-radius:16px;padding:9px 16px;cursor:pointer;transition:.2s}
-.tc:hover{border-color:var(--gold);color:var(--gold-deep)}
-.tc .c{font-size:.64rem;color:var(--ink-soft);margin-left:6px;font-weight:400}
-/* 叙事语义高亮 */
-.hl-w{color:var(--gold-deep);font-weight:600}
-.hl-p{color:var(--seine-deep);font-weight:600}
-.hl-t{color:var(--rose);font-weight:600}
-.hl-l{color:#8a7a3f;border-bottom:1px dotted #c7b88a}
-#view-line .ph-line{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-family:var(--fs)}
-.note{position:fixed;left:14px;bottom:12px;font-family:var(--fs);font-size:.62rem;color:var(--ink-soft);background:rgba(252,250,245,.9);border:1px solid var(--line);border-radius:11px;padding:5px 11px;z-index:120;max-width:320px}
+body{font-family:var(--sans);color:var(--ink);background:var(--paper);overflow:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+.serif{font-family:var(--serif)}
+
+#app{position:fixed;inset:0}
+.scene{position:absolute;inset:0;display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;transform:scale(1.015);pointer-events:none;
+  transition:opacity .7s ease,transform .7s ease,visibility 0s .7s}
+.scene.on{opacity:1;visibility:visible;transform:scale(1);pointer-events:auto;transition:opacity .7s ease,transform .7s ease}
+
+#cover{align-items:center;justify-content:center;text-align:center;
+  background:linear-gradient(160deg,#211d18 0%,#3a322a 55%,#4a3f33 100%);color:var(--paper)}
+#cover .kicker{letter-spacing:.5em;font-size:12px;color:var(--champ);margin-bottom:26px;text-transform:uppercase}
+#cover h1{font-family:var(--serif);font-weight:600;font-size:clamp(40px,7vw,86px);line-height:1.08;letter-spacing:.02em}
+#cover h1 .accent{color:var(--champ);font-style:italic}
+#cover .sub{margin-top:22px;font-size:15px;color:#cbbfa9;max-width:560px;line-height:1.9}
+#cover .meta{margin-top:14px;font-size:12px;letter-spacing:.3em;color:#8f8472}
+.btn-primary{margin-top:46px;padding:15px 46px;background:var(--champ);color:#211a10;
+  font-size:15px;letter-spacing:.18em;border-radius:2px;box-shadow:0 10px 30px rgba(201,164,92,.35);
+  transition:transform .25s ease,box-shadow .25s ease}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(201,164,92,.5)}
+.btn-ghost{padding:11px 26px;border:1px solid var(--line);color:var(--ink);border-radius:2px;font-size:13px;letter-spacing:.12em;transition:.25s}
+.btn-ghost:hover{border-color:var(--champ);color:var(--champ)}
+.btn-ghost.dark{border-color:#5a5145;color:#cdc2ae}
+.btn-ghost.dark:hover{border-color:var(--champ);color:var(--champ)}
+
+#quiz{background:var(--paper)}
+.quiz-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:720px;width:100%;margin:0 auto;padding:40px 28px}
+.quiz-top{display:flex;align-items:center;gap:16px;margin-bottom:40px}
+.quiz-dim{font-size:12px;letter-spacing:.2em;color:var(--muted)}
+.progress{flex:1;height:2px;background:var(--line);position:relative;overflow:hidden}
+.progress i{position:absolute;left:0;top:0;bottom:0;background:var(--champ);width:0;transition:width .5s cubic-bezier(.22,1,.36,1)}
+.quiz-count{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.q-num{font-family:var(--serif);font-size:13px;color:var(--champ);letter-spacing:.3em;margin-bottom:14px}
+.q-text{font-family:var(--serif);font-size:clamp(22px,3vw,32px);line-height:1.5;margin-bottom:40px;font-weight:600}
+.opt{display:block;width:100%;text-align:left;padding:20px 24px;margin-bottom:14px;background:#fffdf8;
+  border:1px solid var(--line);border-left:3px solid transparent;border-radius:3px;
+  font-size:16px;line-height:1.6;transition:.25s cubic-bezier(.22,1,.36,1)}
+.opt:hover{border-color:var(--champ);border-left-color:var(--champ);transform:translateX(6px);background:#fff}
+.opt.picked{border-color:var(--champ);border-left-color:var(--champ);background:#faf3e2}
+
+#result{background:linear-gradient(165deg,#26211b,#3d352b);color:var(--paper)}
+.result-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;max-width:760px;margin:0 auto}
+.r-code{font-size:13px;letter-spacing:.6em;color:var(--champ);margin-bottom:18px}
+.r-name{font-family:var(--serif);font-size:clamp(46px,8vw,92px);font-weight:600;line-height:1.1}
+.r-tag{margin-top:18px;font-family:var(--serif);font-style:italic;font-size:clamp(18px,2.4vw,26px);color:#e7d9bd}
+.r-desc{margin-top:26px;font-size:15px;line-height:2;color:#cabfaa;max-width:560px}
+.r-tags{margin-top:24px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.r-chip{font-size:12px;padding:7px 15px;border:1px solid #5a5145;border-radius:30px;color:#cdc2ae;letter-spacing:.08em}
+.r-actions{margin-top:44px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.r-dims{margin-top:30px;display:flex;gap:22px;font-size:11px;color:#8f8472;letter-spacing:.1em;flex-wrap:wrap;justify-content:center}
+.r-dims b{color:var(--champ);font-weight:600}
+
+#journey{background:#000}
+#map{position:absolute;inset:0}
+.maplibregl-ctrl-attrib{font-size:9px;opacity:.55}
+.maplibregl-ctrl-bottom-right{margin:0 14px 22px}
+
+.j-top{position:absolute;top:0;left:0;right:0;z-index:5;padding:20px 26px;
+  display:flex;align-items:center;gap:16px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(20,17,13,.72),transparent)}
+.j-persona{display:flex;align-items:center;gap:12px;pointer-events:auto}
+.j-dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 12px currentColor}
+.j-pname{font-family:var(--serif);color:#f3ead8;font-size:17px}
+.j-pcode{font-size:10px;letter-spacing:.2em;color:var(--champ);margin-top:2px}
+.j-spacer{flex:1}
+.j-actions{display:flex;gap:10px;pointer-events:auto}
+.mini-btn{font-size:12px;color:#e7dcc6;border:1px solid rgba(231,220,198,.3);padding:8px 14px;border-radius:2px;
+  backdrop-filter:blur(6px);background:rgba(20,17,13,.35);transition:.25s;letter-spacing:.08em}
+.mini-btn:hover{border-color:var(--champ);color:var(--champ)}
+
+.stage{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:0 26px 30px;
+  display:flex;justify-content:center;pointer-events:none}
+.card{width:min(640px,92vw);pointer-events:auto;
+  background:linear-gradient(180deg,rgba(34,29,23,.86),rgba(26,22,17,.93));
+  backdrop-filter:blur(14px);border:1px solid rgba(201,164,92,.28);border-radius:6px;
+  padding:26px 30px 24px;box-shadow:var(--shadow);color:#efe7d6;
+  transform:translateY(30px);opacity:0;transition:opacity .8s ease .15s,transform .8s cubic-bezier(.22,1,.36,1) .15s}
+.card.show{transform:translateY(0);opacity:1}
+.card .c-kicker{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.c-idx{font-family:var(--serif);font-size:13px;color:var(--champ);letter-spacing:.2em;font-variant-numeric:tabular-nums}
+.c-cat{font-size:10px;padding:3px 9px;border:1px solid rgba(201,164,92,.4);border-radius:20px;color:#d8c290}
+.c-area{font-size:11px;color:#a99e8a;margin-left:auto}
+.card h2{font-family:var(--serif);font-weight:600;font-size:clamp(23px,3.2vw,32px);line-height:1.25;margin-bottom:4px;color:#f7efe0}
+.card .fr{font-size:12px;font-style:italic;color:#b3a88f;letter-spacing:.04em;margin-bottom:14px}
+.card .hook{font-family:var(--serif);font-size:16px;line-height:1.75;color:#ecd9b0;font-style:italic;
+  border-left:2px solid var(--champ);padding-left:14px;margin-bottom:14px}
+.card .open{font-size:14px;line-height:1.8;color:#d8cfbd;background:rgba(201,164,92,.08);
+  border-radius:4px;padding:11px 14px;margin-bottom:14px}
+.card .open b{color:var(--champ);font-weight:600}
+.card .tip{font-size:12.5px;line-height:1.7;color:#a99e8a;display:flex;gap:8px}
+.card .tip b{color:#c9b78a;flex:none}
+.card-nav{display:flex;align-items:center;gap:14px;margin-top:20px}
+.nav-btn{flex:1;padding:13px;border:1px solid rgba(201,164,92,.4);border-radius:3px;color:#f0e6d2;
+  font-size:14px;letter-spacing:.12em;transition:.25s;background:rgba(201,164,92,.06)}
+.nav-btn:hover:not(:disabled){background:rgba(201,164,92,.2);border-color:var(--champ)}
+.nav-btn:disabled{opacity:.28;cursor:not-allowed}
+.nav-btn.primary{background:var(--champ);color:#241c10;border-color:var(--champ);font-weight:600}
+.nav-btn.primary:hover{background:#d8b56e}
+.dots{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
+.dot{width:7px;height:7px;border-radius:50%;background:rgba(231,220,198,.22);transition:.4s}
+.dot.done{background:var(--champ);box-shadow:0 0 8px rgba(201,164,92,.7)}
+.dot.cur{background:#f3ead8;transform:scale(1.4)}
+
+.intro-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:6;
+  color:#efe7d6;text-align:center;pointer-events:none;opacity:0;transition:opacity 1s ease}
+.intro-hint.on{opacity:1}
+.intro-hint .big{font-family:var(--serif);font-size:clamp(28px,5vw,54px);line-height:1.3;text-shadow:0 4px 30px rgba(0,0,0,.6)}
+.intro-hint .small{margin-top:16px;font-size:13px;letter-spacing:.3em;color:var(--champ)}
+
+#ending{align-items:center;justify-content:center;text-align:center;
+  background:linear-gradient(165deg,#221d17,#3a3128);color:var(--paper)}
+.end-wrap{padding:44px 30px;max-width:680px}
+.end-kicker{font-size:12px;letter-spacing:.5em;color:var(--champ);margin-bottom:22px}
+.end-title{font-family:var(--serif);font-size:clamp(30px,5vw,52px);line-height:1.3;font-weight:600;margin-bottom:8px}
+.end-line{font-family:var(--serif);font-style:italic;font-size:clamp(17px,2.4vw,22px);color:#e3d2ac;line-height:1.9;margin:26px 0 30px}
+.lit-list{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:36px}
+.lit{font-size:12px;padding:7px 13px;border:1px solid rgba(201,164,92,.4);border-radius:30px;color:#e7d9bd}
+.lit .ck{color:var(--champ);margin-right:6px}
+.end-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+.drawer{position:absolute;top:0;right:0;bottom:0;width:min(380px,90vw);z-index:20;
+  background:rgba(28,24,19,.97);backdrop-filter:blur(16px);border-left:1px solid rgba(201,164,92,.25);
+  transform:translateX(100%);transition:transform .55s cubic-bezier(.22,1,.36,1);overflow-y:auto;padding:26px 22px}
+.drawer.on{transform:translateX(0)}
+.drawer h3{font-family:var(--serif);color:#f0e6d2;font-size:20px;margin-bottom:4px}
+.drawer .dh{font-size:12px;color:#a99e8a;margin-bottom:20px;line-height:1.7}
+.pcard{display:block;width:100%;text-align:left;padding:14px 15px;margin-bottom:9px;border-radius:4px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);transition:.2s}
+.pcard:hover{background:rgba(201,164,92,.12);border-color:rgba(201,164,92,.4)}
+.pcard .pt{display:flex;align-items:center;gap:9px}
+.pcard .pd{width:8px;height:8px;border-radius:50%;flex:none}
+.pcard .pn{font-family:var(--serif);color:#ece2ce;font-size:15px}
+.pcard .pc{margin-left:auto;font-size:10px;letter-spacing:.15em;color:var(--champ)}
+.pcard .pl{font-size:11px;color:#9c917e;margin-top:5px;line-height:1.5}
+.drawer-close{position:absolute;top:18px;right:20px;color:#cbbfa9;font-size:22px;line-height:1}
+.fade{animation:fade .8s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (max-width:640px){.card{padding:20px}.j-pname{font-size:15px}}
 </style>
 </head>
 <body>
-<div class="app">
-  <div class="topbar">
-    <div class="brand" onclick="goWorld()"><span class="hamster"></span>Lemi's Diary <small>· 章鱼仔的旅行手账</small></div>
-    <div class="top-right"><div class="crumb" id="crumb"></div><div class="lang" onclick="toggleLang()" id="langBtn">中 / EN</div></div>
-  </div>
-  <div class="views">
-    <section class="view active" id="view-world"><div class="world" id="worldBox"></div></section>
-    <section class="view" id="view-hub">
-      <div class="hub"><div class="hub-in">
-        <div class="hub-search">
-          <div class="chs"><span class="mag"></span>
-            <input id="searchInput" placeholder="搜 POI · 名人 · 名作…（试试「花神」「波伏娃」「歌剧魅影」）" oninput="onSearch(this.value)" onfocus="onSearch(this.value)" onkeydown="searchKey(event)"></div>
-          <div class="suggest" id="suggest"></div>
+<div id="app">
+
+  <section class="scene on" id="cover">
+    <div class="fade">
+      <div class="kicker">Lemi · Paris Storylines</div>
+      <h1>十六种人格的<br><span class="accent">巴黎旅行手账</span></h1>
+      <p class="sub">同一座城市，十六种走法。<br>先回答 12 个问题，找到你的旅行人格，巴黎会为你亮起一条只属于你的故事线。</p>
+      <div class="meta">真实地图 · 真实坐标 · 一场可交互的微纪录片</div>
+      <button class="btn-primary" onclick="App.startQuiz()">开始测试</button>
+    </div>
+  </section>
+
+  <section class="scene" id="quiz">
+    <div class="quiz-wrap">
+      <div class="quiz-top">
+        <span class="quiz-dim" id="qDim"></span>
+        <div class="progress"><i id="qBar"></i></div>
+        <span class="quiz-count" id="qCount"></span>
+      </div>
+      <div class="q-num" id="qNum"></div>
+      <div class="q-text" id="qText"></div>
+      <div id="qOpts"></div>
+    </div>
+  </section>
+
+  <section class="scene" id="result">
+    <div class="result-wrap">
+      <div class="r-code" id="rCode"></div>
+      <div class="r-name serif" id="rName"></div>
+      <div class="r-tag" id="rTag"></div>
+      <p class="r-desc" id="rDesc"></p>
+      <div class="r-tags" id="rTags"></div>
+      <div class="r-dims" id="rDims"></div>
+      <div class="r-actions">
+        <button class="btn-primary" onclick="App.enterJourney()">进入我的巴黎故事线 →</button>
+        <button class="btn-ghost dark" onclick="App.retake()">重新测试</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene" id="journey">
+    <div id="map"></div>
+    <div class="intro-hint" id="introHint">
+      <div class="big serif" id="introBig"></div>
+      <div class="small" id="introSmall"></div>
+    </div>
+    <div class="j-top">
+      <div class="j-persona">
+        <span class="j-dot" id="jDot"></span>
+        <div>
+          <div class="j-pname" id="jPname"></div>
+          <div class="j-pcode" id="jPcode"></div>
         </div>
-        <div class="stats"><span><b>1</b>城市</span><span><b>1</b>故事线</span><span><b>7</b>POI</span><span><b>6</b>关联名人名作</span></div>
-        <div class="tabs">
-          <button class="on" onclick="setTab('wall',this)">故事线</button>
-          <button onclick="setTab('timeline',this)">章节时间轴</button>
-          <button onclick="setTab('map',this)">城市地图</button>
-          <button onclick="setTab('theme',this)">主题标签</button>
+      </div>
+      <div class="j-spacer"></div>
+      <div class="j-actions">
+        <button class="mini-btn" onclick="App.toggleDrawer()">16 条故事线</button>
+        <button class="mini-btn" onclick="App.retake()">重测</button>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="dots" id="dots"></div>
+        <div class="c-kicker">
+          <span class="c-idx" id="cIdx"></span>
+          <span class="c-cat" id="cCat"></span>
+          <span class="c-area" id="cArea"></span>
         </div>
-        <div id="pane"></div>
-      </div></div>
-    </section>
-    <section class="view" id="view-line"><div class="ph-line">故事线页加载中…</div></section>
-  </div>
+        <h2 id="cName"></h2>
+        <div class="fr" id="cFr"></div>
+        <div class="hook" id="cHook"></div>
+        <div class="open"><b>你的打开方式 · </b><span id="cOpen"></span></div>
+        <div class="tip"><b>Tips</b><span id="cTip"></span></div>
+        <div class="card-nav">
+          <button class="nav-btn" id="prevBtn" onclick="App.prev()">← 上一站</button>
+          <button class="nav-btn primary" id="nextBtn" onclick="App.next()">下一站</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene" id="ending">
+    <div class="end-wrap">
+      <div class="end-kicker">FIN · 我的巴黎手账</div>
+      <div class="end-title serif" id="endTitle"></div>
+      <div class="end-line serif" id="endLine"></div>
+      <div class="lit-list" id="litList"></div>
+      <div class="end-actions">
+        <button class="btn-primary" onclick="App.replay()">重走这条线</button>
+        <button class="btn-ghost dark" onclick="App.openDrawer()">换一条人格线</button>
+        <button class="btn-ghost dark" onclick="App.retake()">重新测试</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="drawer" id="drawer">
+    <button class="drawer-close" onclick="App.closeDrawer()">×</button>
+    <h3>16 条故事线</h3>
+    <div class="dh">核心地标相同，走法截然不同。<br>点任意一张，用另一种人格重游巴黎。</div>
+    <div id="drawerList"></div>
+  </aside>
+
 </div>
-<div class="note">真实 MapLibre + CARTO 底图 · 配图来自 Wikimedia · 对标 storymap 全链路的旅行改造原型</div>
+
 <script>
-/* ===== Lemi's Diary demo · DATA (rich, 对齐 PRD-A 全字段) ===== */
-var FP='https://commons.wikimedia.org/wiki/Special:FilePath/';
-var IMG={
-  estrapade:FP+'Place_de_l%27Estrapade_2.JPG?width=640',
-  pantheon:FP+'Pantheon_of_Paris_007.JPG?width=640',
-  flore:FP+'Caf%C3%A9_de_Flore,_172_boulevard_Saint-Germain,_Paris_6e.jpg?width=640',
-  buren:FP+'Palais_Royal_et_les_Colonnes_de_Buren.jpg?width=640',
-  garnier:FP+'Paris_Palais_Garnier_2010-04-06_16.55.07.jpg?width=640',
-  pont:FP+'Pont_Alexandre_III_from_pont_de_la_Concorde,_Paris_17_May_2012.jpg?width=640',
-  eiffel:FP+'Tour_Eiffel_Wikimedia_Commons.jpg?width=640'
+const Q=[
+ {dim:"culture",q:"哪种旅行地最容易让你一秒心动？",o:[["厚重的历史底蕴，藏着好多故事",2],["有烟火气的城市，边吃边逛最快乐",1],["绝美山海，沉醉于自然风光",0]]},
+ {dim:"culture",q:"到了一个景点，你的打开方式？",o:[["做足功课，历史、名人、典故都想知道",2],["先找最佳机位，来一趟必出片",1],["随便走走，看到有意思的介绍就多停会儿",0]]},
+ {dim:"culture",q:"旅行结束，你最爱的“战利品”？",o:[["有地方故事的工艺品或书画，越有来历越喜欢",2],["特产或免税好物，拿在手里最安心",1],["满相册的美照、明信片、冰箱贴",0]]},
+ {dim:"social",q:"如果只能选一种旅行方式，你会？",o:[["一群人热热闹闹，认识新朋友超快乐",2],["和几个熟悉的朋友一起，舒服又有安全感",1],["一个人出发，轻松又自在",0]]},
+ {dim:"social",q:"吃饭时听到邻桌在聊当地玩法，你会？",o:[["直接凑过去搭话：“姐妹求推荐！”",2],["悄悄听两句，默默记在心里",1],["专心干饭，左耳进右耳出",0]]},
+ {dim:"social",q:"旅行中迷路了，你第一反应？",o:[["立刻抓个本地人问路，顺便唠唠嗑",2],["先自己找找，实在不行再问工作人员",1],["靠自己解决，不太想麻烦别人",0]]},
+ {dim:"planning",q:"出发前一周，你的状态？",o:[["精确到分钟的攻略，万事俱备",2],["大概记下几个想去的地方，其他全凭心情",1],["到了再说，灵感会带路",0]]},
+ {dim:"planning",q:"如果当天突然下雨打乱计划，你会？",o:[["马上切换备选方案，确保行程不跑偏",2],["问题不大，灵活调整成室内游",1],["换个玩法也有意思，反而像开了隐藏支线",0]]},
+ {dim:"planning",q:"你最舒服的旅行节奏是？",o:[["安排得明明白白，心里才踏实",2],["打卡必去点，都不白来",1],["走到哪算哪，当下开心最重要",0]]},
+ {dim:"spending",q:"你的旅行花销大头在？",o:[["住宿和体验，舒服才是硬道理",2],["很平均，该省省该花花",1],["交通！用最少的钱去最多的地方",0]]},
+ {dim:"spending",q:"热门景点要排 1 小时，你会？",o:[["果断加！时间比这点钱宝贵多了",2],["看情况，太晒太累就加钱",1],["硬排，能省则省",0]]},
+ {dim:"spending",q:"当地超火的游客体验项目，你？",o:[["来都来了！必须安排，不留遗憾",2],["价格合适会想试试看",1],["找平替或直接跳过，没必要花这钱",0]]}
+];
+const DIMNAME={culture:"文化",planning:"规划",social:"社交",spending:"消费"};
+
+const App={
+ score:{culture:0,planning:0,social:0,spending:0},
+ qi:0, persona:null, route:null, si:0, map:null, markers:[], lit:new Set(),
+
+ show(id){document.querySelectorAll('.scene').forEach(s=>s.classList.remove('on'));
+   document.getElementById(id).classList.add('on');},
+ startQuiz(){this.score={culture:0,planning:0,social:0,spending:0};this.qi=0;this.show('quiz');this.renderQ();},
+ renderQ(){
+   const item=Q[this.qi];
+   document.getElementById('qDim').textContent=DIMNAME[item.dim]+" 维度";
+   document.getElementById('qCount').textContent=(this.qi+1)+" / 12";
+   document.getElementById('qBar').style.width=(this.qi/12*100)+"%";
+   document.getElementById('qNum').textContent="QUESTION "+String(this.qi+1).padStart(2,'0');
+   document.getElementById('qText').textContent=item.q;
+   const box=document.getElementById('qOpts');box.innerHTML="";
+   item.o.forEach(([txt,pts])=>{
+     const b=document.createElement('button');b.className='opt';b.textContent=txt;
+     b.onclick=()=>this.answer(pts,b);box.appendChild(b);
+   });
+ },
+ answer(pts,el){
+   el.classList.add('picked');
+   this.score[Q[this.qi].dim]+=pts;
+   setTimeout(()=>{this.qi++; if(this.qi<Q.length)this.renderQ(); else this.compute();},320);
+ },
+ hi(v){return v>=4;},
+ compute(){
+   const s=this.score;
+   const C=this.hi(s.culture),P=this.hi(s.planning),S=this.hi(s.social),M=this.hi(s.spending);
+   const M4={
+    "1111":"GOAT","1110":"CTRL","1101":"BLUE","1100":"NERD",
+    "1011":"DODO","1010":"MYTH","1001":"LORD","1000":"BUDD",
+    "0111":"BOSS","0110":"TIME","0101":"FREE","0100":"WIND",
+    "0011":"SHAN","0010":"BEE","0001":"REST","0000":"CUTE"
+   };
+   const code=M4[`${C?1:0}${P?1:0}${S?1:0}${M?1:0}`];
+   this.persona=PARIS.personas.find(p=>p.code===code);
+   this.route=ROUTES[code];
+   document.getElementById('qBar').style.width="100%";
+   this.renderResult();
+ },
+ renderResult(){
+   const p=this.persona;
+   document.getElementById('rCode').textContent=p.code;
+   document.getElementById('rName').textContent=p.name;
+   document.getElementById('rTag').textContent="“"+p.tagline+"”";
+   document.getElementById('rDesc').textContent=p.desc;
+   document.getElementById('rTags').innerHTML=
+     `<span class="r-chip">${p.vibe}</span><span class="r-chip">${p.pace}</span><span class="r-chip">预算 ${p.budget}</span>`;
+   const s=this.score;
+   document.getElementById('rDims').innerHTML=
+     ["culture","planning","social","spending"].map(d=>
+       `${DIMNAME[d]}·${this.hi(s[d])?"高":"低"}`).join("　·　");
+   this.show('result');
+ },
+ retake(){this.closeDrawer();this.startQuiz();},
+
+ enterJourney(){
+   this.show('journey');this.si=0;this.lit=new Set();
+   document.getElementById('jDot').style.color=this.persona.color;
+   document.getElementById('jPname').textContent=this.persona.name+"的线路";
+   document.getElementById('jPcode').textContent=this.persona.code+" · "+this.route.title;
+   if(!this.map) this.initMap(); else this.clearRoute();
+   this.drawRoute(()=>this.playIntro());
+ },
+ initMap(){
+   this.map=new maplibregl.Map({container:'map',
+     style:'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+     center:[2.34,48.862],zoom:12.4,pitch:46,bearing:-8});
+   this.map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
+   this.map.scrollZoom.setWheelZoomRate(1/600);
+ },
+ clearRoute(){this.markers.forEach(m=>m.remove());this.markers=[];
+   ['route-l','route-g'].forEach(l=>{if(this.map.getLayer(l))this.map.removeLayer(l);});
+   ['route','ghost'].forEach(src=>{if(this.map.getSource(src))this.map.removeSource(src);});
+ },
+ drawRoute(cb){
+   const coords=this.route.stops.map(st=>PARIS.pois[st.id].c);
+   const add=()=>{
+     this.clearRoute();
+     this.map.addSource('ghost',{type:'geojson',data:{type:'Feature',
+       geometry:{type:'LineString',coordinates},properties:{}}});
+     this.map.addLayer({id:'route-g',type:'line',source:'ghost',
+       paint:{'line-color':'#c9a45c','line-width':2,'line-opacity':.22,'line-dasharray':[2,2]}});
+     this.map.addSource('route',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+     this.map.addLayer({id:'route-l',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},
+       paint:{'line-color':'#c9a45c','line-width':3.5,'line-opacity':.95,'line-blur':.4}});
+     this.route.stops.forEach((st,i)=>{
+       const poi=PARIS.pois[st.id];
+       const el=document.createElement('div');
+       el.style.cssText=`width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+         font-family:Georgia;font-size:13px;font-weight:700;color:#2a2113;
+         background:rgba(245,239,227,.92);border:2px solid ${this.persona.color};
+         box-shadow:0 3px 12px rgba(0,0,0,.4);cursor:pointer;transition:transform .3s,background .3s,color .3s`;
+       el.textContent=i+1;
+       const mk=new maplibregl.Marker({element:el}).setLngLat(poi.c).addTo(this.map);
+       el.addEventListener('click',()=>App.goTo(i));
+       this.markers.push(mk);
+     });
+     cb&&cb();
+   };
+   if(this.map.loaded())add();else this.map.once('load',add);
+ },
+ playIntro(){
+   const h=document.getElementById('introHint');
+   document.getElementById('introBig').textContent=this.persona.name+" · 出发";
+   document.getElementById('introSmall').textContent=this.route.title;
+   h.classList.add('on');
+   this.map.flyTo({center:[2.34,48.862],zoom:11.8,pitch:42,bearing:0,duration:2600,essential:true});
+   setTimeout(()=>{h.classList.remove('on');this.goTo(0);},3000);
+ },
+ goTo(i){
+   this.si=i;const st=this.route.stops[i],poi=PARIS.pois[st.id];
+   const seg=this.route.stops.slice(0,i+1).map(x=>PARIS.pois[x.id].c);
+   this.map.getSource('route').setData({type:'Feature',
+     geometry:{type:'LineString',coordinates:seg},properties:{}});
+   const here=this.map.getCenter();
+   const d=Math.hypot(here.lng-poi.c[0],here.lat-poi.c[1]);
+   this.map.flyTo({center:[poi.c[0]-0.006,poi.c[1]-0.004],zoom:13.4,pitch:48,bearing:-6,
+     speed: d>0.03?0.7:0.0001,curve:1.5,essential:true});
+   this.markers.forEach((m,k)=>{const e=m.getElement();
+     e.style.transform=(k===i)?'scale(1.35)':'scale(1)';
+     if(k<=i){e.style.background=this.persona.color;e.style.color='#fff';}
+     else{e.style.background='rgba(245,239,227,.92)';e.style.color='#2a2113';}});
+   this.renderCard();
+ },
+ renderCard(){
+   const i=this.si,st=this.route.stops[i],poi=PARIS.pois[st.id],n=this.route.stops.length;
+   const card=document.getElementById('card');
+   card.classList.remove('show');void card.offsetWidth;card.classList.add('show');
+   document.getElementById('cIdx').textContent="STATION "+String(i+1).padStart(2,'0')+" / "+String(n).padStart(2,'0');
+   document.getElementById('cCat').textContent=poi.cat;
+   document.getElementById('cArea').textContent=poi.area;
+   document.getElementById('cName').textContent=poi.n;
+   document.getElementById('cFr').textContent=poi.fr;
+   document.getElementById('cHook').textContent="「 "+poi.hook+" 」";
+   document.getElementById('cOpen').textContent=st.open;
+   document.getElementById('cTip').textContent=poi.tip;
+   document.getElementById('prevBtn').disabled=(i===0);
+   document.getElementById('nextBtn').textContent=(i===n-1)?'点亮全图，合上这一页 →':'下一站 →';
+   document.getElementById('dots').innerHTML=this.route.stops.map((_,k)=>
+     `<span class="dot ${k<i?'done':''} ${k===i?'cur':''}"></span>`).join('');
+ },
+ next(){
+   this.lit.add(this.route.stops[this.si].id);
+   if(this.si<this.route.stops.length-1){this.goTo(this.si+1);}else{this.finish();}
+ },
+ prev(){if(this.si>0)this.goTo(this.si-1);},
+ finish(){
+   this.route.stops.forEach(s=>this.lit.add(s.id));
+   document.getElementById('endTitle').textContent=this.persona.name+"，这是你的巴黎";
+   document.getElementById('endLine').textContent=this.route.end;
+   document.getElementById('litList').innerHTML=this.route.stops.map(s=>
+     `<span class="lit"><span class="ck">✦</span>${PARIS.pois[s.id].n}</span>`).join('');
+   this.closeDrawer();this.show('ending');
+ },
+ replay(){this.enterJourney();},
+
+ openDrawer(){document.getElementById('drawer').classList.add('on');this.drawerOpen=true;if(!this.drawerB){this.buildDrawer();this.drawerB=1;}},
+ closeDrawer(){document.getElementById('drawer').classList.remove('on');this.drawerOpen=false;},
+ toggleDrawer(){this.drawerOpen?this.closeDrawer():this.openDrawer();},
+ buildDrawer(){
+   const list=document.getElementById('drawerList');list.innerHTML="";
+   PARIS.personas.filter(p=>!p.hidden).forEach(p=>{
+     const r=ROUTES[p.code];const b=document.createElement('button');b.className='pcard';
+     b.innerHTML=`<div class="pt"><span class="pd" style="background:${p.color}"></span>
+       <span class="pn">${p.name}</span><span class="pc">${p.code}</span></div>
+       <div class="pl">${r.title}</div>`;
+     b.onclick=()=>{this.persona=p;this.route=ROUTES[p.code];this.closeDrawer();
+       document.getElementById('jDot').style.color=p.color;
+       document.getElementById('jPname').textContent=p.name+"的线路";
+       document.getElementById('jPcode').textContent=p.code+" · "+r.title;
+       this.clearRoute();this.drawRoute(()=>this.playIntro());};
+     list.appendChild(b);
+   });
+ }
 };
-var POSTER=IMG.garnier;
-
-var CITIES=[
-  {id:'paris',nm:{zh:'巴黎',en:'Paris'},ll:[2.3522,48.8566],xy:[500,232],lines:1,open:true},
-  {id:'london',nm:{zh:'伦敦',en:'London'},ll:[-0.1278,51.5074],xy:[476,206],lines:0,open:false},
-  {id:'tokyo',nm:{zh:'东京',en:'Tokyo'},ll:[139.69,35.68],xy:[858,300],lines:0,open:false},
-  {id:'nyc',nm:{zh:'纽约',en:'New York'},ll:[-74.0,40.71],xy:[270,275],lines:0,open:false},
-  {id:'rome',nm:{zh:'罗马',en:'Rome'},ll:[12.49,41.90],xy:[520,270],lines:0,open:false}
-];
-
-/* 作品/名人词条库(供 tooltip + 关系图) */
-var ENTITIES={
-  beauvoir:{type:'person',nm:{zh:'西蒙娜·德·波伏娃',en:'Simone de Beauvoir'},era:'1908–1986',role:{zh:'哲学家 · 作家',en:'Philosopher · Writer'},sum:{zh:'存在主义代表人物，女性主义奠基作《第二性》作者，常在花神咖啡馆写作。',en:'Existentialist and feminist icon; wrote The Second Sex, often at Café de Flore.'},poi:2},
-  sartre:{type:'person',nm:{zh:'让-保罗·萨特',en:'Jean-Paul Sartre'},era:'1905–1980',role:{zh:'哲学家',en:'Philosopher'},sum:{zh:'存在主义哲学核心人物，与波伏娃在左岸咖啡馆写作辩论。',en:'Central existentialist; wrote and debated on the Left Bank with Beauvoir.'},poi:2},
-  secondsex:{type:'work',nm:{zh:'第二性',en:'The Second Sex'},era:'1949',role:{zh:'波伏娃 著',en:'by Beauvoir'},sum:{zh:'现代女性主义奠基之作，「女人不是天生的，而是后天形成的」。',en:'Foundational feminist work: "One is not born, but becomes, a woman."'},poi:2},
-  phantom:{type:'work',nm:{zh:'歌剧魅影',en:'The Phantom of the Opera'},era:'1910',role:{zh:'勒鲁 著',en:'by Leroux'},sum:{zh:'以加尼叶歌剧院为背景，地下湖与包厢 No.5 均取材真实建筑。',en:'Set in Palais Garnier; the lake and Box 5 are drawn from the real building.'},poi:4},
-  buren_art:{type:'work',nm:{zh:'两个平台',en:'Les Deux Plateaux'},era:'1986',role:{zh:'布伦 作',en:'by Buren'},sum:{zh:'黑白条纹柱阵，皇家宫殿庭院的当代艺术地标。',en:"Buren's striped columns — a contemporary landmark in the Palais-Royal court."},poi:3},
-  contract:{type:'work',nm:{zh:'社会契约论',en:'The Social Contract'},era:'1762',role:{zh:'卢梭 著',en:'by Rousseau'},sum:{zh:'「人生而自由，却无往不在枷锁之中」，卢梭长眠先贤祠。',en:'"Man is born free…"; Rousseau rests in the Panthéon.'},poi:1},
-  curie:{type:'person',nm:{zh:'玛丽·居里',en:'Marie Curie'},era:'1867–1934',role:{zh:'物理化学家',en:'Physicist-Chemist'},sum:{zh:'两获诺奖，先贤祠首位凭自身成就入祀的女性。',en:'Two-time Nobel laureate; first woman interred in the Panthéon on her own merit.'},poi:1}
-};
-
-/* 章节/主题标签(供筛选) */
-var TAGS=['全部','影视','文学','历史','建筑','美食','浪漫'];
-
-/* 7 站 · 每站四类叙事分段 + 关联实体 + 背景知识 + 延伸提问卡 */
-var STOPS=[
-  {idx:1,img:'estrapade',ll:[2.3470,48.8447],badge:{zh:'起点',en:'Start'},chapter:1,tags:['影视','浪漫'],
-   nm:{zh:'埃斯特拉帕德广场',en:"Place de l'Estrapade"},en2:'5e arr. · 左岸',dur:{zh:'起点',en:'start'},
-   intro:{zh:'剧集开篇 Emily 拎着行李站在这扇绿门前——从此她的巴黎生活正式开始。这里也是全球剧迷来巴黎的第一站。',en:'Where Emily arrives with her suitcase — the true start of her Paris life, and fans’ first stop.'},
-   narr:{
-     scene:{zh:'Emily 在巴黎的家，那扇绿色大门 No.1 是全剧最经典的取景地。',en:"Emily's home; the green door at No.1 is the show's iconic spot."},
-     anecdote:{zh:'剧组选中这里是因为广场安静、鹅卵石与绿门色彩上镜；如今门口常年有剧迷排队合影。',en:'Chosen for its quiet cobbles and photogenic green door; fans queue here daily.'},
-     history:{zh:'广场得名于中世纪一种叫「estrapade」的刑罚，如今是拉丁区最惬意的小广场之一。',en:'Named after a medieval punishment; now one of the Latin Quarter’s calmest squares.'}
-   },
-   spot:{zh:'站在街对面斜拍绿门与鹅卵石路，晨光最佳。',en:'Shoot the green door across the cobbles at morning light.'},
-   related:[],tips:{zh:'地铁 10 号线 Cardinal Lemoine 站步行 4 分；广场旁 Terra Nera 是剧中餐厅原型。',en:'Metro L10 Cardinal Lemoine, 4 min; Terra Nera nearby inspired the show’s restaurant.'},
-   know:{zh:'拉丁区(Quartier latin)因中世纪索邦大学师生讲拉丁语得名，是巴黎的学术与文艺心脏。',en:'The Latin Quarter is named for the Latin once spoken at the Sorbonne — Paris’s scholarly heart.'},
-   asks:[{q:{zh:'为什么值得来？',en:'Why come?'},a:{zh:'这是剧迷的「巴黎第一站」，绿门 + 鹅卵石的组合极其上镜，且广场安静适合慢慢拍。',en:'The fan pilgrimage’s first stop — the green door and cobbles are wonderfully photogenic and calm.'}},
-          {q:{zh:'怎么拍好看？',en:'How to shoot it?'},a:{zh:'清晨顺光斜拍绿门，把鹅卵石路作为前景引导线，人站门口三分之一处。',en:'Morning light, shoot at an angle with the cobbles as a leading line; stand at the door’s third.'}}]},
-
-  {idx:2,img:'pantheon',ll:[2.3462,48.8462],badge:{zh:'历史',en:'History'},chapter:1,tags:['历史','建筑'],
-   nm:{zh:'先贤祠',en:'Panthéon'},en2:'圣热纳维耶芙山',dur:{zh:'步行 4 分',en:'4 min walk'},
-   intro:{zh:'从 Emily 家步行几分钟就是先贤祠——法兰西最伟大灵魂的安息地，也是理解法国精神的一把钥匙。',en:'A few minutes from Emily’s door stands the Panthéon — resting place of France’s greatest minds.'},
-   narr:{
-     history:{zh:'伏尔泰、卢梭、雨果、大仲马、居里夫人长眠于此；山墙上刻着「祖国感念伟人」。',en:'Voltaire, Rousseau, Hugo, Dumas and Marie Curie rest here; the pediment reads "To great men, the grateful homeland."'},
-     work:{zh:'卢梭的《社会契约论》与雨果的《悲惨世界》都从这座城市的思想土壤中生长出来。',en:'Rousseau’s Social Contract and Hugo’s Les Misérables grew from this city’s intellectual soil.'},
-     anecdote:{zh:'1851 年傅科在穹顶下悬挂大摆锤，首次向公众直观证明地球自转。',en:'In 1851 Foucault hung his pendulum under the dome, publicly proving Earth’s rotation.'}
-   },
-   quote:{zh:'祖国感念伟人。',en:'Aux grands hommes la patrie reconnaissante.'},
-   spot:{zh:'正门柱廊用广角，容得下三角楣与穹顶；内部傅科摆是必拍。',en:'Wide-angle at the portico; the Foucault pendulum inside is a must.'},
-   related:['contract','curie'],
-   tips:{zh:'开放 10:00–18:30，门票约 11.5€，可登顶看巴黎全景。',en:'Open 10:00–18:30, ~11.5€, climb the dome for a panorama.'},
-   know:{zh:'先贤祠原为教堂，法国大革命后改为安葬「伟人」的世俗圣殿，入祀需国家决议。',en:'Originally a church, it became a secular mausoleum after the Revolution; interment requires a national decree.'},
-   asks:[{q:{zh:'有什么趣闻？',en:'Any trivia?'},a:{zh:'傅科摆是史上第一个不依赖天文观测、直接证明地球自转的实验，就在这座穹顶下完成。',en:'Foucault’s pendulum was the first non-astronomical proof of Earth’s spin — done right under this dome.'}},
-          {q:{zh:'和 Emily 有关系吗？',en:'Linked to Emily?'},a:{zh:'剧中它常作为 Emily 家附近的背景地标出现，是左岸知识分子气质的象征。',en:'It often appears as a backdrop near Emily’s home, symbolizing the Left Bank’s intellectual air.'}}]},
-
-  {idx:3,img:'flore',ll:[2.3327,48.8542],badge:{zh:'名人轶事',en:'Anecdote'},chapter:2,tags:['文学','美食','浪漫'],
-   nm:{zh:'花神咖啡馆',en:'Café de Flore'},en2:'圣日耳曼德佩',dur:{zh:'步行 9 分',en:'9 min walk'},
-   intro:{zh:'圣日耳曼大道上的花神咖啡馆，是存在主义哲学的诞生地之一，也是巴黎文艺气质最浓的一杯咖啡。',en:'On Boulevard Saint-Germain, Café de Flore is a birthplace of existentialism — Paris’s most literary coffee.'},
-   narr:{
-     anecdote:{zh:'萨特与波伏娃几乎把这里当书房，一坐一整天写作、辩论、见客。',en:'Sartre and Beauvoir treated it as a study — writing, debating and receiving guests all day.'},
-     work:{zh:'波伏娃的《第二性》部分章节就在这些大理石小桌上写成。',en:'Parts of Beauvoir’s The Second Sex were written at these marble tables.'},
-     scene:{zh:'红色雨棚、藤椅、白围裙侍者——这一帧几乎是「巴黎左岸」的视觉定义。',en:'Red awning, cane chairs, aproned waiters — almost the visual definition of the Left Bank.'}
-   },
-   spot:{zh:'露天座配红棚，坐外侧拍街景与招牌；下午光线最柔。',en:'Terrace under the red awning; afternoon light is softest.'},
-   related:['beauvoir','sartre','secondsex'],
-   tips:{zh:'一杯咖啡约 7€，人气高常需等位；隔壁双叟咖啡馆同样有名。',en:'~7€ a coffee, expect a queue; Les Deux Magots next door is equally famous.'},
-   know:{zh:'存在主义主张「存在先于本质」——人先存在，再由自己的选择定义自己。',en:'Existentialism holds that "existence precedes essence": we exist first, then define ourselves by our choices.'},
-   asks:[{q:{zh:'为什么值得来？',en:'Why come?'},a:{zh:'你喝的不只是咖啡，而是坐进了 20 世纪思想史的现场——萨特与波伏娃的「露天书房」。',en:'You’re sitting inside 20th-century intellectual history — Sartre and Beauvoir’s open-air study.'}},
-          {q:{zh:'有什么趣闻？',en:'Any trivia?'},a:{zh:'二战期间花神因有暖气而成了作家们的避寒写作地，萨特说这里「像家一样」。',en:'During WWII its heating made it a writers’ winter refuge; Sartre called it "like home."'}}]},
-
-  {idx:4,img:'buren',ll:[2.3371,48.8636],badge:{zh:'名作',en:'Work'},chapter:2,tags:['建筑','影视'],
-   nm:{zh:'皇家宫殿花园',en:'Jardin du Palais-Royal'},en2:'1er arr.',dur:{zh:'过河 12 分',en:'12 min'},
-   intro:{zh:'穿过塞纳河来到右岸，皇家宫殿的庭院里藏着巴黎最著名的当代艺术打卡点——布伦的黑白条纹柱阵。',en:'Across the Seine, the Palais-Royal courtyard hides Paris’s famous striped columns by Buren.'},
-   narr:{
-     work:{zh:'布伦《两个平台》1986 年落成，260 根黑白条纹石柱高低错落，游客最爱在柱间跳跃拍照。',en:"Buren's Les Deux Plateaux (1986): 260 striped columns at varying heights — a jumping-photo favorite."},
-     scene:{zh:'剧中人物在条纹柱间穿行的画面极具节奏感，是时尚大片的常用背景。',en:'Characters weaving through the columns make a rhythmic, fashion-shoot-ready shot.'},
-     history:{zh:'皇家宫殿曾是红衣主教黎塞留的官邸，后成为法国大革命的舆论策源地之一。',en:'Once Cardinal Richelieu’s residence, later a cradle of Revolutionary opinion.'}
-   },
-   quote:{zh:'我们永远看得不够。',en:'Nous ne regarderons jamais assez.'},
-   spot:{zh:'蹲低让条纹柱形成透视线，人站远端；清晨人少最好拍。',en:'Crouch low so the columns lead the eye; dawn is quietest.'},
-   related:['buren_art'],
-   tips:{zh:'花园免费全天开放；周边拱廊有百年老店与餐厅。',en:'Free garden, open all day; the arcades hold century-old shops.'},
-   know:{zh:'「装置艺术」把日常空间本身变成作品，布伦柱正是让庭院成为可穿行的艺术。',en:'Installation art turns space itself into the artwork — Buren’s columns make the court walkable art.'},
-   asks:[{q:{zh:'怎么拍好看？',en:'How to shoot it?'},a:{zh:'低机位仰拍让柱子形成透视线，利用高低柱错落做前景，人物站在纵深三分之二处。',en:'Low angle for perspective lines; use the varied heights as foreground, subject at two-thirds depth.'}}]},
-
-  {idx:5,img:'garnier',ll:[2.3319,48.8720],badge:{zh:'名作',en:'Work'},chapter:3,tags:['建筑','历史'],
-   nm:{zh:'加尼叶歌剧院',en:'Palais Garnier'},en2:'9e arr.',dur:{zh:'步行 8 分',en:'8 min'},
-   intro:{zh:'金碧辉煌的加尼叶歌剧院，是第二帝国建筑的巅峰，也是《歌剧魅影》故事的真实舞台。',en:'The gilded Palais Garnier crowns Second-Empire architecture — and stages the real Phantom.'},
-   narr:{
-     work:{zh:'《歌剧魅影》即以此为背景，小说里的地下湖与包厢 No.5 都取材于真实建筑。',en:'The Phantom of the Opera is set here; its underground lake and Box 5 are drawn from the real house.'},
-     history:{zh:'查尔斯·加尼叶设计，1875 年落成，大理石楼梯与夏加尔穹顶壁画是必看。',en:'Designed by Charles Garnier (1875); the marble staircase and Chagall ceiling are must-sees.'},
-     scene:{zh:'正立面对称华丽，是时尚剧集偏爱的「巴黎奢华」象征场景。',en:'Its symmetric façade is a go-to symbol of Parisian opulence on screen.'}
-   },
-   spot:{zh:'正立面对称构图，黄昏暖光打亮金饰；内部大楼梯广角。',en:'Symmetric façade at golden hour; wide-angle for the grand staircase inside.'},
-   related:['phantom'],
-   tips:{zh:'内部参观约 14€，含大理石楼梯与观众厅；可看芭蕾演出。',en:'Interior ~14€ incl. staircase & auditorium; ballet performances available.'},
-   know:{zh:'第二帝国风格追求繁复华丽的装饰，加尼叶歌剧院是其教科书级代表。',en:'The Second-Empire style prizes lavish ornament — Garnier is its textbook example.'},
-   asks:[{q:{zh:'有什么趣闻？',en:'Any trivia?'},a:{zh:'歌剧院地下确有蓄水池(消防用)，正是「地下湖」传说的现实来源。',en:'A real underground cistern (for fire safety) inspired the "underground lake" legend.'}},
-          {q:{zh:'和名作有什么关系？',en:'Link to the novel?'},a:{zh:'勒鲁 1910 年的《歌剧魅影》把这座真实建筑写进小说，包厢 No.5 至今保留。',en:'Leroux’s 1910 novel wrote this real building in; Box 5 is still kept.'}}]},
-
-  {idx:6,img:'pont',ll:[2.3135,48.8639],badge:{zh:'剧情',en:'Scene'},chapter:3,tags:['浪漫','建筑'],
-   nm:{zh:'亚历山大三世桥',en:'Pont Alexandre III'},en2:'塞纳河',dur:{zh:'步行 15 分',en:'15 min'},
-   intro:{zh:'公认巴黎最华丽的桥，金色飞马雕塑在日落时分熠熠生辉——无数浪漫场景在此上演。',en:'Paris’s most ornate bridge; its gilded pegasi glow at sunset — a stage for countless romances.'},
-   narr:{
-     scene:{zh:'金色飞马、华灯、塞纳河与荣军院穹顶同框，是巴黎浪漫的经典构图。',en:'Gilded pegasi, lamps, the Seine and Les Invalides’ dome — a classic romantic frame.'},
-     history:{zh:'为 1900 年巴黎世博会而建，以纪念法俄同盟，得名沙皇亚历山大三世。',en:'Built for the 1900 World’s Fair to mark the Franco-Russian alliance, named for Tsar Alexander III.'},
-     anecdote:{zh:'桥上的镀金雕塑与新艺术风格灯柱，使它常年是婚纱与时尚大片的取景地。',en:'Its gilt statues and Art-Nouveau lamps make it a perennial wedding & fashion shoot spot.'}
-   },
-   spot:{zh:'桥头仰拍金马柱，纳入荣军院穹顶；日落前 30 分最美。',en:'Look up at the gilded columns with Les Invalides behind; 30 min before sunset.'},
-   related:[],
-   tips:{zh:'日落前 30 分到，抢金色时刻；桥下有塞纳河游船码头。',en:'Arrive 30 min before sunset; river-cruise docks below.'},
-   know:{zh:'新艺术运动(Art Nouveau)崇尚自然曲线与装饰，1900 世博会前后席卷巴黎。',en:'Art Nouveau embraced natural curves and ornament, sweeping Paris around the 1900 Fair.'},
-   asks:[{q:{zh:'怎么拍好看？',en:'How to shoot it?'},a:{zh:'站桥头仰拍一侧金马柱，把荣军院金顶收进背景，逆光剪影或日落暖调都很出片。',en:'From the bridgehead shoot one gilded column upward with Les Invalides behind; sunset backlight shines.'}}]},
-
-  {idx:7,img:'eiffel',ll:[2.2945,48.8584],badge:{zh:'终点',en:'Finale'},chapter:3,tags:['浪漫','影视','建筑'],
-   nm:{zh:'埃菲尔铁塔',en:'Eiffel Tower'},en2:'战神广场',dur:{zh:'步行 18 分',en:'18 min'},
-   intro:{zh:'旅程的终点是巴黎的终极象征——埃菲尔铁塔。夜幕后的整点闪灯秀，为这条故事线画上金色句点。',en:'The journey ends at Paris’s ultimate icon. The nightly sparkle is a golden full stop to the storyline.'},
-   narr:{
-     scene:{zh:'夜间每逢整点有 5 分钟闪灯秀，是全剧最浪漫的收尾场景。',en:'On the hour after dark it sparkles for five minutes — the show’s most romantic finale.'},
-     history:{zh:'为 1889 年巴黎世博会而建，本是临时建筑，如今成为法国的国家象征。',en:'Built for the 1889 World’s Fair as a temporary structure — now France’s national emblem.'},
-     anecdote:{zh:'莫泊桑曾是反对建塔的 47 位名流之一，据说他常在塔内餐厅用餐——因为那是「唯一看不到铁塔的地方」。',en:'Maupassant, among 47 who opposed it, reportedly dined inside — "the only place you can’t see it."'}
-   },
-   quote:{zh:'铁塔终究让我厌烦透顶。',en:'La tour Eiffel finissait par m’ennuyer.'},
-   spot:{zh:'夏乐宫平台正对铁塔中轴，闪灯秀必守；战神广场草坪可拍全景。',en:'Trocadéro deck faces the tower; the Champ de Mars lawn for full views.'},
-   related:[],
-   tips:{zh:'夏乐宫(Trocadéro)免费机位，闪灯每整点；登塔需预约。',en:'Free spot at Trocadéro; sparkle on the hour; booking needed to ascend.'},
-   know:{zh:'铁塔高 330m，由 18000 多个铁件铆接而成，是工业时代工程美学的宣言。',en:'At 330m and 18,000+ riveted parts, it’s a manifesto of industrial-age engineering beauty.'},
-   asks:[{q:{zh:'为什么值得来？',en:'Why come?'},a:{zh:'它是巴黎的终极象征，夜间整点闪灯秀几乎是每个人巴黎记忆里的高光时刻。',en:'It’s Paris’s ultimate symbol; the hourly night sparkle is everyone’s highlight memory.'}},
-          {q:{zh:'有什么趣闻？',en:'Any trivia?'},a:{zh:'莫泊桑讨厌铁塔却常在塔内餐厅吃饭，只因那是巴黎唯一看不见铁塔的地方。',en:'Maupassant hated it yet dined inside — the one spot in Paris without a view of it.'}}]}
-];
-
-var SEARCH=[
-  {type:'poi',nm:'花神咖啡馆',ds:'Café de Flore · 存在主义据点',chip:'Emily in Paris',reason:'名称精确',go:2},
-  {type:'person',nm:'波伏娃',ds:'关联 POI：花神咖啡馆',chip:'《第二性》',reason:'内容命中',go:2},
-  {type:'person',nm:'萨特',ds:'关联 POI：花神咖啡馆',chip:'存在主义',reason:'内容命中',go:2},
-  {type:'work',nm:'歌剧魅影',ds:'关联 POI：加尼叶歌剧院',chip:'勒鲁 1910',reason:'名作命中',go:4},
-  {type:'poi',nm:'埃菲尔铁塔',ds:'Eiffel Tower · 铁塔全景',chip:'Emily in Paris',reason:'名称精确',go:6},
-  {type:'poi',nm:'先贤祠',ds:'Panthéon · 名人长眠地',chip:'卢梭/居里夫人',reason:'名称精确',go:1},
-  {type:'work',nm:'第二性',ds:'波伏娃著 · 关联花神咖啡馆',chip:'待收录',reason:'',go:-1,wait:true}
-];
-
-var VECTOR_STYLE='https://basemaps.cartocdn.com/gl/positron-gl-style/style.json';
-var SAT_STYLE={version:8,sources:{sat:{type:'raster',tiles:['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],tileSize:256,attribution:'Esri'}},layers:[{id:'sat',type:'raster',source:'sat'}]};
-/* 四类叙事的显示顺序与配色 */
-var NARR_KINDS=[
-  {k:'scene',label:{zh:'剧情',en:'Scene'},color:'#D98C90'},
-  {k:'anecdote',label:{zh:'名人轶事',en:'Anecdote'},color:'#C99A5A'},
-  {k:'work',label:{zh:'名作',en:'Work'},color:'#A6864F'},
-  {k:'history',label:{zh:'历史',en:'History'},color:'#5E7688'}
-];
-
-</script>
-<script>
-/* ===== Lemi's Diary demo · WORLD + HUB (rich) ===== */
-var hubMap=null,curTab='wall',curFilter='全部';
-
-/* shared marker element */
-function markerEl(i,cls){
-  var d=document.createElement('div');d.className='mk '+(cls||'');
-  d.style.cssText='width:30px;height:38px;cursor:pointer;transform:translateY(-4px);position:relative';
-  d.innerHTML='<svg viewBox="0 0 30 38" style="width:100%;height:100%;filter:drop-shadow(0 3px 4px rgba(60,40,10,.5))">'
-    +'<path class="hd" d="M15,2 C22,2 28,7 28,14 C28,24 15,36 15,36 C15,36 2,24 2,14 C2,7 8,2 15,2 Z" fill="#fff" stroke="#5E7688" stroke-width="2"/>'
-    +'<text x="15" y="17" text-anchor="middle" font-size="13" font-weight="700" fill="#5E7688">'+(i+1)+'</text></svg>';
-  return d;
-}
-function cityMarkerEl(c){
-  var d=document.createElement('div');d.style.cssText='cursor:'+(c.open?'pointer':'default')+';text-align:center;transform:translateY(-6px)';
-  var dot=c.open?'#D98C90':'#b3ab99';
-  d.innerHTML='<div style="width:16px;height:16px;border-radius:50%;background:'+dot+';border:2.5px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.35);margin:0 auto'+(c.open?';animation:pulse2 2s ease-out infinite':'')+'"></div>'
-    +'<div style="font-size:12px;font-weight:700;color:#3A342B;margin-top:3px;white-space:nowrap;text-shadow:0 1px 3px #fff">'+c.nm[LANG]+(c.open?'':' 🔒')+'</div>'
-    +'<div style="font-size:10px;color:#867B69;white-space:nowrap">'+(c.open?(c.lines+(LANG==='zh'?' 条故事线':' line')):(LANG==='zh'?'待解锁':'locked'))+'</div>';
-  return d;
-}
-
-/* ---- WORLD MAP: real MapLibre ---- */
-var worldMap=null;
-function renderWorld(){
-  var box=document.getElementById('worldBox');if(!box)return;
-  var t1=LANG==='zh'?'你想先逛哪座城？':'Which city first?';
-  var t2=LANG==='zh'?'选一座城市，走进它的故事线 · 首期开放 巴黎 ×《艾米莉在巴黎》':'Pick a city and walk its storyline · Paris × Emily in Paris';
-  box.innerHTML='<div id="worldMap" style="position:absolute;inset:0"></div>'
-    +'<div class="w-ov"><h1>'+t1+'</h1><p>'+t2+'</p></div>';
-  if(worldMap){try{worldMap.remove();}catch(e){}worldMap=null;}
-  if(!window.maplibregl)return;
-  worldMap=new maplibregl.Map({container:'worldMap',style:VECTOR_STYLE,center:[30,30],zoom:1.4,attributionControl:false,dragRotate:false});
-  worldMap.on('load',function(){
-    CITIES.forEach(function(c){var el=cityMarkerEl(c);if(c.open)el.onclick=enterHub;new maplibregl.Marker({element:el}).setLngLat(c.ll).addTo(worldMap);});
-  });
-}
-
-function imgTag(key){return '<img src="'+IMG[key]+'" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\'">';}
-
-/* ---- HUB tabs ---- */
-function setTab(tab,btn){
-  curTab=tab;
-  if(btn){document.querySelectorAll('.tabs button').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');}
-  else{var bs=document.querySelectorAll('.tabs button');bs.forEach(function(b){b.classList.remove('on');});var idx={wall:0,timeline:1,map:2,theme:3}[tab]||0;if(bs[idx])bs[idx].classList.add('on');}
-  if(hubMap){try{hubMap.remove();}catch(e){}hubMap=null;}
-  var pane=document.getElementById('pane');
-  if(tab==='wall')renderWall(pane);
-  else if(tab==='timeline')renderTimeline(pane);
-  else if(tab==='map')renderCityMap(pane);
-  else renderTheme(pane);
-}
-/* 视角1: 故事线卡片墙 */
-function renderWall(pane){
-  var d1=LANG==='zh'?'沿剧中取景地漫步左岸右岸，一站一段场景、名人轶事与名作。':'Walk the filming spots on both banks — scenes, anecdotes and works.';
-  pane.innerHTML='<div class="wall">'
-    +card('Emily<br>in Paris','7 POI',LANG==='zh'?'影视 · 浪漫':'Film · Romance',['影视','浪漫','左岸'],d1,false,true,POSTER)
-    +card(LANG==='zh'?'存在主义<br>左岸':'Left Bank<br>Existentialism','5 POI',LANG==='zh'?'文学':'Literature',['文学','哲学'],LANG==='zh'?'波伏娃与萨特的咖啡馆哲学之路。':'The café philosophy of Beauvoir and Sartre.',true,false,'')
-    +card(LANG==='zh'?'美好<br>年代':'Belle<br>Époque','6 POI',LANG==='zh'?'历史':'History',['历史','建筑'],LANG==='zh'?'世博会与铁塔诞生的巴黎。':'Paris of the World Fair and the Tower.',true,false,'')
-    +'</div>';
-  var open=pane.querySelector('.sc.enter');if(open)open.onclick=enterLine;
-}
-function card(title,poi,tag,chips,desc,locked,enter,poster){
-  var ps=poster?'style="background-image:url('+poster+')"':'';
-  return '<div class="sc'+(locked?' locked':'')+(enter?' enter':'')+'">'
-    +'<div class="po" '+ps+'>'+(locked?'<span class="lk">🔒 '+(LANG==='zh'?'待解锁':'locked')+'</span>':'<span class="pm">PARIS<br>75</span>')+'<h3>'+title+'</h3></div>'
-    +'<div class="bd"><div class="mt"><span class="pin">◈ '+poi+'</span><span>'+tag+'</span></div>'
-    +'<div class="ch">'+chips.map(function(c){return '<span>'+c+'</span>';}).join('')+'</div><div class="de">'+desc+'</div></div></div>';
-}
-/* 视角2: 章节时间轴星图(主客体反转自 storymap 时间分布星图) */
-function renderTimeline(pane){
-  var chapters=[{n:1,t:{zh:'第一章 · 左岸初到',en:'Ch.1 · Arrival'}},{n:2,t:{zh:'第二章 · 咖啡与艺术',en:'Ch.2 · Café & Art'}},{n:3,t:{zh:'第三章 · 华灯与铁塔',en:'Ch.3 · Lights & Tower'}}];
-  var h='<div class="tl-hint">'+(LANG==='zh'?'按剧集章节浏览 7 站 · 点星点进入该站':'Browse 7 stops by chapter · click a star to enter')+'</div><div class="tl">';
-  chapters.forEach(function(ch){
-    h+='<div class="tl-ch"><div class="tl-cn">'+ch.t[LANG]+'</div><div class="tl-row">';
-    STOPS.forEach(function(s,i){if(s.chapter!==ch.n)return;
-      h+='<div class="tl-star" onclick="gotoStop('+i+')"><div class="tl-dot">'+s.idx+'</div><div class="tl-nm">'+s.nm[LANG]+'</div></div>';
-    });
-    h+='</div></div>';
-  });
-  h+='</div>';
-  pane.innerHTML=h;
-}
-/* 视角3: 城市真实地图 + 按主题筛选 + 分布统计 */
-function renderCityMap(pane){
-  var fbtns=TAGS.map(function(t){return '<button class="fb'+(t===curFilter?' on':'')+'" onclick="setFilter(\''+t+'\',this)">'+t+'</button>';}).join('');
-  pane.innerHTML='<div class="filters">'+fbtns+'</div>'
-    +'<div class="home-map" id="hubMapBox"></div>'
-    +'<div class="legend"><span class="d"></span>Emily in Paris · <span id="cmCount">7</span> POI（'+(LANG==='zh'?'点击任一进入该站':'click any pin')+'）</div>';
-  setTimeout(initHubMap,60);
-}
-function renderTheme(pane){
-  var counts={};STOPS.forEach(function(s){(s.tags||[]).forEach(function(t){counts[t]=(counts[t]||0)+1;});});
-  var chips=Object.keys(counts).map(function(t){return [t,counts[t]+' POI'];});
-  pane.innerHTML='<div class="theme">'+chips.map(function(c){return '<div class="tc" onclick="setTab(\'map\');setTimeout(function(){setFilter(\''+c[0]+'\')},80)">'+c[0]+'<span class="c">'+c[1]+'</span></div>';}).join('')+'</div>';
-}
-function setFilter(t,btn){curFilter=t;
-  if(btn){document.querySelectorAll('.fb').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');}
-  else{document.querySelectorAll('.fb').forEach(function(b){b.classList.toggle('on',b.textContent===t);});}
-  applyFilter();}
-function matchFilter(s){return curFilter==='全部'||(s.tags||[]).indexOf(curFilter)>-1;}
-function applyFilter(){
-  if(!hubMap)return;var cnt=0;
-  hubCityMks.forEach(function(o){var vis=matchFilter(STOPS[o.i]);o.el.style.opacity=vis?'1':'.22';o.el.style.pointerEvents=vis?'auto':'none';if(vis)cnt++;});
-  var cc=document.getElementById('cmCount');if(cc)cc.textContent=cnt;
-}
-var hubCityMks=[];
-function initHubMap(){
-  var box=document.getElementById('hubMapBox');if(!box||!window.maplibregl)return;hubCityMks=[];
-  hubMap=new maplibregl.Map({container:box,style:VECTOR_STYLE,center:[2.3320,48.8580],zoom:12,attributionControl:false});
-  hubMap.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
-  hubMap.on('load',function(){
-    hubMap.addSource('r',{type:'geojson',data:{type:'Feature',geometry:{type:'LineString',coordinates:STOPS.map(function(s){return s.ll;})}}});
-    hubMap.addLayer({id:'r',type:'line',source:'r',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#C5A572','line-width':3,'line-dasharray':[2,1.5]}});
-    STOPS.forEach(function(s,i){var el=markerEl(i);el.onclick=function(){gotoStop(i);};
-      new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat(s.ll).addTo(hubMap);hubCityMks.push({el:el,i:i});});
-    var b=new maplibregl.LngLatBounds();STOPS.forEach(function(s){b.extend(s.ll);});hubMap.fitBounds(b,{padding:56,duration:0});
-    applyFilter();
-  });
-}
-
-/* ---- SEARCH ---- */
-var sgIdx=-1,sgList=[];
-function onSearch(v){var box=document.getElementById('suggest');sgIdx=-1;
-  if(!v){box.classList.remove('show');box.innerHTML='';sgList=[];return;}
-  var res=SEARCH.filter(function(s){return s.nm.indexOf(v)>-1;});sgList=res;
-  if(!res.length){box.classList.add('show');box.innerHTML='<div class="sg"><div class="sgb"><div class="ds">未找到「'+v+'」相关内容。试试浏览故事线 / 章节 / 城市地图 / 主题标签。</div></div></div>';return;}
-  var tm={poi:'POI',person:'名人',work:'名作'};
-  box.innerHTML=res.map(function(s,i){
-    if(s.wait)return '<div class="sg wait" onclick="waitToast()"><span class="sgt '+s.type+'">'+tm[s.type]+'</span><div class="sgb"><div class="nm">'+s.nm+'</div><div class="ds">'+s.ds+'</div></div><span class="wb">待收录</span></div>';
-    return '<div class="sg" data-i="'+i+'" onmouseenter="sgHL('+i+')" onclick="gotoStop('+s.go+')"><span class="sgt '+s.type+'">'+tm[s.type]+'</span><div class="sgb"><div class="nm">'+s.nm+'</div><div class="ds">'+s.ds+'</div></div><span class="sgc">'+s.chip+'</span>'+(s.reason?'<span class="sgr">'+s.reason+'</span>':'')+'</div>';
-  }).join('');box.classList.add('show');
-}
-function sgHL(i){sgIdx=i;document.querySelectorAll('#suggest .sg').forEach(function(e,k){e.classList.toggle('hl',k===i);});}
-function searchKey(e){var it=document.querySelectorAll('#suggest .sg');if(!it.length)return;
-  if(e.key==='ArrowDown'){e.preventDefault();sgIdx=(sgIdx+1)%it.length;sgHL(sgIdx);}
-  else if(e.key==='ArrowUp'){e.preventDefault();sgIdx=(sgIdx-1+it.length)%it.length;sgHL(sgIdx);}
-  else if(e.key==='Enter'){var s=sgList[sgIdx<0?0:sgIdx];if(s&&!s.wait&&s.go>=0)gotoStop(s.go);else if(s&&s.wait)waitToast();}
-  else if(e.key==='Escape'){document.getElementById('suggest').classList.remove('show');}}
-function waitToast(){var inp=document.getElementById('searchInput');var o=inp.placeholder;inp.value='';inp.placeholder='「第二性」敬请期待 ✦';setTimeout(function(){inp.placeholder=o;},1500);}
-function gotoStop(i){document.getElementById('suggest').classList.remove('show');enterLine();pendingStop=i;}
-
-</script>
-<script>
-/* ===== Lemi's Diary demo · STORYLINE dual-column page (rich, 对齐 PRD-A) ===== */
-var curStop=0,autoTimer=null,lineMap=null,pendingStop=0,popup=null,mkEls=[],lineBuilt=false,splitPct=42;
-
-function buildLineDOM(){
-  if(lineBuilt)return;lineBuilt=true;
-  var css=document.createElement('style');
-  css.textContent=`
-  .line{position:absolute;inset:0;display:grid;grid-template-columns:var(--lw,42%) 6px 1fr}
-  .cl-left{background:var(--paper);overflow:auto;position:relative}
-  .cl-split{background:var(--line);cursor:col-resize;position:relative;transition:background .2s}
-  .cl-split:hover,.cl-split.drag{background:var(--gold)}
-  .cl-split::after{content:"⋮";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:12px}
-  .cl-head{padding:15px 20px 11px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--paper);z-index:5}
-  .cl-back{font-size:.7rem;color:var(--ink-soft);cursor:pointer;margin-bottom:7px;display:inline-block}
-  .cl-back:hover{color:var(--gold-deep)}
-  .cl-title{font-family:var(--fd);font-style:italic;font-size:1.3rem}
-  .cl-sub{font-family:var(--fs);font-size:.7rem;color:var(--ink-soft);margin-top:3px}
-  .cl-desc{font-family:var(--fs);font-size:.76rem;color:var(--ink-soft);line-height:1.6;margin-top:8px;max-height:2.9em;overflow:hidden;transition:max-height .3s}
-  .cl-desc.open{max-height:200px}
-  .cl-more{font-size:.66rem;color:var(--gold-deep);cursor:pointer;margin-top:3px;display:inline-block}
-  .cl-ctrl{display:flex;gap:7px;margin-top:11px;align-items:center;flex-wrap:wrap}
-  .cl-ctrl button{font-family:var(--fu);font-size:.7rem;font-weight:700;border:1px solid var(--line);background:var(--cream);color:var(--ink-soft);border-radius:15px;padding:6px 11px;cursor:pointer;transition:.2s;display:flex;align-items:center;gap:5px}
-  .cl-ctrl button:hover{border-color:var(--gold)}
-  .cl-ctrl .play.on{background:var(--gold-deep);color:#fff;border-color:var(--gold-deep)}
-  .cl-ctrl .play .tri{width:0;height:0;border-left:7px solid currentColor;border-top:4px solid transparent;border-bottom:4px solid transparent}
-  .cl-ctrl .play.on .tri{border:none;width:7px;height:9px;border-left:3px solid #fff;border-right:3px solid #fff}
-  .cl-prog{font-size:.64rem;color:var(--ink-soft);margin-left:auto}
-  .stops{padding:6px 0 60px;position:relative}
-  .stc{padding:14px 20px 16px 44px;border-bottom:1px dashed var(--line);cursor:pointer;transition:opacity .25s,background .25s;opacity:.5;position:relative}
-  .stc.active{opacity:1;background:linear-gradient(90deg,var(--rose-soft),transparent 62%)}
-  .stc.passed{opacity:.72}.stc:hover{opacity:.92}
-  .stc::before{content:"";position:absolute;left:25px;top:0;bottom:0;width:2px;background:var(--line)}
-  .stc:first-child::before{top:20px}.stc:last-child::before{bottom:calc(100% - 20px)}
-  .stc.passed::before,.stc.active::before{background:var(--gold)}
-  .stc .nd{position:absolute;left:18px;top:16px;width:15px;height:15px;border-radius:50%;background:#fff;border:2px solid var(--line);z-index:2;transition:.25s}
-  .stc.passed .nd{border-color:var(--gold);background:var(--gold)}
-  .stc.active .nd{border-color:var(--gold);background:var(--gold);box-shadow:0 0 0 5px var(--rose-soft)}
-  .stc .hd{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
-  .stc .ix{font-size:.6rem;font-weight:700;color:var(--gold-deep)}
-  .stc .nm{font-family:var(--fd);font-weight:700;font-size:1.04rem}
-  .stc .bg{font-size:.54rem;font-weight:700;color:#fff;border-radius:9px;padding:2px 7px}
-  .stc .dur{font-size:.54rem;font-weight:700;color:var(--seine-deep);background:var(--cream);border:1px solid var(--line);border-radius:9px;padding:2px 7px;margin-left:auto}
-  .stc .en2{font-size:.58rem;color:var(--ink-soft);font-style:italic;margin-top:1px}
-  .stc .th{height:132px;border-radius:var(--r-sm);margin:9px 0;overflow:hidden;position:relative;background:linear-gradient(135deg,var(--seine),var(--seine-deep));cursor:zoom-in}
-  .stc .th img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s}
-  .stc.active .th img{transform:scale(1.03)}
-  .stc .th .ph{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:rgba(255,255,255,.9);font-size:.64rem;font-family:var(--fs)}
-  .stc .th .cap{position:absolute;left:8px;bottom:6px;color:#fff;font-size:.54rem;text-shadow:0 1px 3px rgba(0,0,0,.7);z-index:1}
-  /* 四类叙事分段 */
-  .narr{margin:8px 0}
-  .narr .row{font-family:var(--fs);font-size:.79rem;line-height:1.68;margin-bottom:6px}
-  .narr .k{font-family:var(--fu);font-size:.55rem;font-weight:700;color:#fff;border-radius:7px;padding:2px 7px;margin-right:6px;white-space:nowrap}
-  .stc .ql{font-family:var(--fh);font-size:1.1rem;color:var(--gold-deep);border-left:3px solid var(--rose);padding-left:10px;margin:9px 0}
-  /* 关联名人名作 chip + tooltip */
-  .rel{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}
-  .rel .chip{font-size:.62rem;border-radius:9px;padding:3px 9px;cursor:help;border:1px solid var(--line);position:relative}
-  .rel .chip.person{color:var(--seine-deep);background:#eef2f4}
-  .rel .chip.work{color:var(--gold-deep);background:var(--rose-soft)}
-  .rel .chip .ic{margin-right:3px}
-  /* 延伸提问卡 */
-  .asks{margin:9px 0}
-  .ask{border:1px solid var(--line);border-radius:var(--r-sm);margin-bottom:6px;overflow:hidden;background:var(--paper)}
-  .ask .q{font-size:.72rem;font-weight:700;color:var(--seine-deep);padding:8px 11px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
-  .ask .q::before{content:"›";color:var(--rose);margin-right:6px;font-weight:700}
-  .ask .q .ar{transition:transform .25s;color:var(--ink-soft);font-size:.7rem}
-  .ask.open .q .ar{transform:rotate(90deg)}
-  .ask .a{max-height:0;overflow:hidden;transition:max-height .3s;font-family:var(--fs);font-size:.74rem;color:var(--ink-soft);line-height:1.65}
-  .ask.open .a{max-height:200px;padding:0 11px 10px}
-  .stc .sp{font-size:.66rem;color:var(--ink-soft);background:var(--cream);border-radius:var(--r-sm);padding:6px 10px;margin-top:7px}
-  .stc .sp b{color:var(--rose)}
-  .stc .tp{font-size:.63rem;color:var(--ink-soft);margin-top:6px;line-height:1.5}
-  .stc .tp b{color:var(--seine-deep)}
-  /* 背景知识 */
-  .know{margin-top:8px;font-size:.66rem;color:var(--ink-soft);background:#f0f3f4;border-left:3px solid var(--seine);border-radius:0 var(--r-sm) var(--r-sm) 0;padding:7px 10px;line-height:1.55}
-  .know b{color:var(--seine-deep)}
-  /* 关系图谱(底部) */
-  .graph{margin:9px 0;padding:10px;border-radius:var(--r-sm);background:var(--cream);border:1px dashed var(--gold)}
-  .graph .gt{font-size:.64rem;font-weight:700;color:var(--gold-deep);margin-bottom:7px}
-  .graph .grow{display:flex;flex-wrap:wrap;gap:6px}
-  .graph .gn{font-size:.62rem;border-radius:9px;padding:4px 9px;background:#fff;border:1px solid var(--line);cursor:pointer;transition:.2s}
-  .graph .gn:hover{border-color:var(--gold);transform:translateY(-1px)}
-  .graph .gn.cross{color:var(--gold-deep);border-style:dashed}
-  .cl-right{position:relative;overflow:hidden}
-  #lineMap{position:absolute;inset:0}
-  .cl-tb{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:6}
-  .cl-tb button{font-size:.64rem;font-weight:700;background:rgba(252,250,245,.94);border:1px solid var(--line);border-radius:9px;padding:6px 10px;color:var(--ink-soft);cursor:pointer}
-  .cl-tb button.on{background:var(--gold);color:#fff;border-color:var(--gold-deep)}
-  .aria{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-  .maplibregl-popup-content{border-radius:var(--r-md);padding:0;overflow:hidden;box-shadow:0 18px 40px -14px rgba(90,60,20,.6);border:1px solid var(--line);max-width:236px}
-  .pop .pi{height:104px;overflow:hidden;background:linear-gradient(135deg,var(--seine),var(--seine-deep))}
-  .pop .pi img{width:100%;height:100%;object-fit:cover;display:block}
-  .pop .pb{padding:9px 12px 11px}
-  .pop b{font-family:var(--fd);font-size:.95rem;display:block;margin-bottom:3px}
-  .pop .pk{font-size:.54rem;font-weight:700;color:#fff;border-radius:7px;padding:2px 6px}
-  .pop .pt{font-family:var(--fs);font-size:.72rem;color:var(--ink-soft);line-height:1.5;margin-top:5px}
-  .pop .ps{font-size:.6rem;color:var(--seine-deep);margin-top:5px}
-  /* entity tooltip (作品/名人 hover 卡) */
-  .etip{position:fixed;z-index:300;width:220px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:0 18px 44px -16px rgba(90,60,20,.55);padding:11px 13px;pointer-events:none;opacity:0;transition:opacity .18s;font-family:var(--fu)}
-  .etip.show{opacity:1}
-  .etip .en{font-family:var(--fd);font-weight:700;font-size:.92rem;color:var(--ink)}
-  .etip .em{font-size:.6rem;color:var(--gold-deep);margin:2px 0 6px}
-  .etip .es{font-family:var(--fs);font-size:.72rem;color:var(--ink-soft);line-height:1.6}
-  .lb{position:fixed;inset:0;background:rgba(30,22,10,.85);display:none;align-items:center;justify-content:center;z-index:400;cursor:zoom-out;flex-direction:column;gap:10px}
-  .lb.show{display:flex}
-  .lb img{max-width:82vw;max-height:74vh;border:11px solid #fff;border-radius:5px;box-shadow:0 30px 70px -20px rgba(0,0,0,.7)}
-  .lb .cap{color:#f6efe3;font-family:var(--fs);font-size:.82rem}
-  .mk.cur svg{transform:scale(1.28)}
-  @media(prefers-reduced-motion:reduce){.stc,.narr .row,.cl-map-viewport,*{transition:none!important}}
-  @media(max-width:760px){.line{grid-template-columns:1fr;grid-template-rows:44% 6px auto}.cl-right{order:-1}.cl-split{cursor:row-resize}}
-  `;
-  document.head.appendChild(css);
-  var v=document.getElementById('view-line');
-  v.innerHTML=`<div class="line" id="lineGrid">
-    <div class="cl-left">
-      <div class="cl-head">
-        <span class="cl-back" onclick="enterHub()">← 返回城市首页</span>
-        <div class="cl-title">Emily in Paris</div>
-        <div class="cl-sub" id="clSub"></div>
-        <div class="cl-desc" id="clDesc"></div><span class="cl-more" id="clMore" onclick="toggleDesc()"></span>
-        <div class="cl-ctrl">
-          <button class="play" id="playBtn" onclick="toggleAutoplay()"><span class="tri"></span><span id="playTxt">自动播放</span></button>
-          <button onclick="stepStop(-1)">← 上一站</button>
-          <button onclick="stepStop(1)">下一站 →</button>
-          <span class="cl-prog" id="clProg">1 / 7</span>
-        </div>
-      </div>
-      <div class="stops" id="stops"></div>
-    </div>
-    <div class="cl-split" id="clSplit"></div>
-    <div class="cl-right">
-      <div id="lineMap"></div>
-      <div class="cl-tb">
-        <button class="on" id="btVec" onclick="setBasemap('vector')">矢量</button>
-        <button id="btSat" onclick="setBasemap('sat')">影像</button>
-        <button id="btFit" onclick="fitAll()">总览</button>
-        <button id="btExport" onclick="exportTrip()">导出</button>
-        <button id="btFs" onclick="toggleFull()">全屏</button>
-      </div>
-      <div class="aria" id="aria" role="status" aria-live="polite"></div>
-    </div>
-  </div>
-  <div class="etip" id="etip"></div>
-  <div class="lb" id="lb" onclick="this.classList.remove('show')"><img id="lbImg" src="" alt=""><div class="cap" id="lbCap"></div></div>`;
-  initSplit();
-}
-
-/* 双栏拖拽分隔条 */
-function initSplit(){
-  var sp=document.getElementById('clSplit'),grid=document.getElementById('lineGrid'),dragging=false;
-  sp.addEventListener('mousedown',function(e){dragging=true;sp.classList.add('drag');e.preventDefault();});
-  window.addEventListener('mousemove',function(e){if(!dragging)return;
-    var r=grid.getBoundingClientRect();var pct=(e.clientX-r.left)/r.width*100;pct=Math.max(26,Math.min(60,pct));
-    grid.style.setProperty('--lw',pct+'%');if(lineMap)lineMap.resize();});
-  window.addEventListener('mouseup',function(){dragging=false;sp.classList.remove('drag');});
-}
-
-function enterLine(){buildLineDOM();showView('line');renderStops();setTimeout(initLineMap,60);}
-function toggleDesc(){var d=document.getElementById('clDesc'),m=document.getElementById('clMore');
-  d.classList.toggle('open');m.textContent=d.classList.contains('open')?(LANG==='zh'?'收起':'less'):(LANG==='zh'?'展开简介':'more');}
-function haversine(a,b){var R=6371,r=Math.PI/180;var dLat=(b[1]-a[1])*r,dLng=(b[0]-a[0])*r;
-  var x=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a[1]*r)*Math.cos(b[1]*r)*Math.sin(dLng/2)*Math.sin(dLng/2);
-  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
-function partialGeo(u){var cs=[];for(var i=0;i<=u;i++)cs.push(STOPS[i].ll);if(cs.length===1)cs.push(STOPS[0].ll);return {type:'Feature',geometry:{type:'LineString',coordinates:cs}};}
-function fullGeo(){return {type:'Feature',geometry:{type:'LineString',coordinates:STOPS.map(function(s){return s.ll;})}};}
-function bounds(){var b=new maplibregl.LngLatBounds();STOPS.forEach(function(s){b.extend(s.ll);});return b;}
-
-/* 叙事语义高亮：给时间/地点/人物/作品词着色 */
-var HL=[
-  {re:/《[^》]+》/g,cls:'hl-w'},
-  {re:/(萨特|波伏娃|卢梭|伏尔泰|雨果|居里夫人|大仲马|莫泊桑|布伦|勒鲁|加尼叶|傅科|黎塞留)/g,cls:'hl-p'},
-  {re:/(\d{4}\s*年|\d{4})/g,cls:'hl-t'},
-  {re:/(左岸|右岸|塞纳河|拉丁区|圣日耳曼|先贤祠|皇家宫殿|战神广场|荣军院|夏乐宫)/g,cls:'hl-l'}
-];
-function highlight(t){if(LANG!=='zh')return t;var s=t;
-  s=s.replace(/《[^》]+》/g,function(m){return '<span class="hl-w">'+m+'</span>';});
-  s=s.replace(/(萨特|波伏娃|卢梭|伏尔泰|雨果|居里夫人|大仲马|莫泊桑|布伦|勒鲁|傅科)/g,function(m){return '<span class="hl-p">'+m+'</span>';});
-  s=s.replace(/(\d{4}\s*年)/g,function(m){return '<span class="hl-t">'+m+'</span>';});
-  s=s.replace(/(左岸|右岸|塞纳河|拉丁区|圣日耳曼|先贤祠|皇家宫殿|战神广场|荣军院|夏乐宫)/g,function(m){return '<span class="hl-l">'+m+'</span>';});
-  return s;}
-
-function renderStops(){
-  document.getElementById('clSub').textContent=LANG==='zh'?'《艾米莉在巴黎》· 沿剧漫步左岸右岸 · 7 站':'Emily in Paris · both banks · 7 stops';
-  var d=document.getElementById('clDesc');
-  d.textContent=LANG==='zh'?'跟着 Emily 的脚步，从拉丁区的绿门出发，穿过左岸的咖啡馆与哲思、右岸的艺术与歌剧，最终抵达塞纳河畔的浪漫与铁塔的闪光。一条线走完《艾米莉在巴黎》的巴黎。':'Follow Emily from the Latin Quarter’s green door, across Left-Bank cafés and Right-Bank art and opera, to the Seine’s romance and the Tower’s sparkle.';
-  document.getElementById('clMore').textContent=LANG==='zh'?'展开简介':'more';
-  document.getElementById('playTxt').textContent=autoTimer?(LANG==='zh'?'停止':'Stop'):(LANG==='zh'?'自动播放':'Autoplay');
-  var host=document.getElementById('stops');
-  host.innerHTML=STOPS.map(function(s,i){
-    var cls=i===curStop?'active':(i<curStop?'passed':'');
-    var kindColor={};NARR_KINDS.forEach(function(n){kindColor[n.k]=n.color;});
-    var h='<div class="stc '+cls+'" data-i="'+i+'" onclick="selectStop('+i+')"><span class="nd"></span>'
-      +'<div class="hd"><span class="ix">'+s.idx+' /</span><span class="nm">'+s.nm[LANG]+'</span>'
-      +'<span class="bg" style="background:'+(kindColor[s.narr.scene?'scene':'history']||'#D98C90')+'">'+s.badge[LANG]+'</span>'
-      +'<span class="dur">'+s.dur[LANG]+'</span></div>'
-      +'<div class="en2">'+s.en2+'</div>'
-      +'<div class="th" onclick="event.stopPropagation();openLB(\''+s.img+'\',\''+s.nm[LANG].replace(/\'/g,'')+'\')">'
-        +'<img src="'+IMG[s.img]+'" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="ph">📷 '+s.nm[LANG]+'</div>'
-        +'<div class="cap">📷 '+s.nm.en+'</div></div>';
-    /* 四类叙事分段 */
-    h+='<div class="narr">';
-    NARR_KINDS.forEach(function(n){if(s.narr[n.k])h+='<div class="row"><span class="k" style="background:'+n.color+'">'+n.label[LANG]+'</span>'+highlight(s.narr[n.k][LANG])+'</div>';});
-    h+='</div>';
-    if(s.quote)h+='<div class="ql">“'+s.quote[LANG]+'”</div>';
-    /* 关联名人名作 chip */
-    if(s.related&&s.related.length){h+='<div class="rel">'+s.related.map(function(id){var e=ENTITIES[id];if(!e)return '';
-      return '<span class="chip '+e.type+'" data-ent="'+id+'" onmouseenter="showEtip(event,\''+id+'\')" onmousemove="moveEtip(event)" onmouseleave="hideEtip()" onclick="event.stopPropagation();gotoEntity(\''+id+'\')"><span class="ic">'+(e.type==='person'?'👤':'📖')+'</span>'+(e.type==='work'?'《'+e.nm[LANG].replace(/[《》]/g,'')+'》':e.nm[LANG])+'</span>';
-    }).join('')+'</div>';}
-    /* 机位 */
-    h+='<div class="sp"><b>📸 '+(LANG==='zh'?'机位':'Photo spot')+'</b> · '+s.spot[LANG]+'</div>';
-    /* 背景知识 */
-    if(s.know)h+='<div class="know"><b>📚 '+(LANG==='zh'?'背景知识':'Background')+'</b> · '+s.know[LANG]+'</div>';
-    /* 延伸提问卡 */
-    if(s.asks&&s.asks.length){h+='<div class="asks">'+s.asks.map(function(a,ai){
-      return '<div class="ask" data-si="'+i+'" data-ai="'+ai+'"><div class="q" onclick="event.stopPropagation();toggleAsk('+i+','+ai+')">'+a.q[LANG]+'<span class="ar">▸</span></div><div class="a">'+a.a[LANG]+'</div></div>';
-    }).join('')+'</div>';}
-    /* 实用信息 */
-    if(s.tips)h+='<div class="tp"><b>ℹ '+(LANG==='zh'?'实用':'Info')+'</b> · '+s.tips[LANG]+'</div>';
-    /* 关系图谱(每站关联 + 跨线) */
-    var gn='';(s.related||[]).forEach(function(id){var e=ENTITIES[id];if(e)gn+='<span class="gn" onclick="event.stopPropagation();gotoEntity(\''+id+'\')">'+(e.type==='person'?'👤 ':'📖 ')+e.nm[LANG].replace(/[《》]/g,'')+'</span>';});
-    if(s.cross)gn+='<span class="gn cross" onclick="event.stopPropagation();crossToast()">🕸️ '+(LANG==='zh'?'存在主义左岸线 · 也讲到这里':'Left-Bank line · also here')+'</span>';
-    if(gn)h+='<div class="graph"><div class="gt">🔗 '+(LANG==='zh'?'关联名人名作 / 其它故事线':'Related people, works & storylines')+'</div><div class="grow">'+gn+'</div></div>';
-    return h+'</div>';
-  }).join('');
-}
-function toggleAsk(si,ai){var el=document.querySelector('.ask[data-si="'+si+'"][data-ai="'+ai+'"]');if(el)el.classList.toggle('open');}
-function crossToast(){alert(LANG==='zh'?'「存在主义左岸线」敬请期待 ✦\n(同一 POI 花神咖啡馆在多条故事线中被讲到)':'"Left-Bank Existentialism" coming soon ✦');}
-
-/* 关联实体 tooltip */
-function showEtip(ev,id){var e=ENTITIES[id];if(!e)return;var t=document.getElementById('etip');
-  t.innerHTML='<div class="en">'+(e.type==='work'?'《'+e.nm[LANG].replace(/[《》]/g,'')+'》':e.nm[LANG])+'</div><div class="em">'+e.era+' · '+e.role[LANG]+'</div><div class="es">'+e.sum[LANG]+'</div>';
-  t.classList.add('show');moveEtip(ev);}
-function moveEtip(ev){var t=document.getElementById('etip');var x=ev.clientX+14,y=ev.clientY+14;
-  if(x+230>window.innerWidth)x=ev.clientX-234;if(y+140>window.innerHeight)y=ev.clientY-150;t.style.left=x+'px';t.style.top=y+'px';}
-function hideEtip(){document.getElementById('etip').classList.remove('show');}
-function gotoEntity(id){var e=ENTITIES[id];if(e&&e.poi!=null){hideEtip();selectStop(e.poi);}}
-
-function initLineMap(){
-  if(lineMap){try{lineMap.remove();}catch(e){}lineMap=null;}
-  var box=document.getElementById('lineMap');if(!box||!window.maplibregl)return;mkEls=[];
-  lineMap=new maplibregl.Map({container:box,style:VECTOR_STYLE,center:STOPS[0].ll,zoom:13,attributionControl:false,preserveDrawingBuffer:true});
-  lineMap.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
-  lineMap.on('load',function(){addLayers();
-    lineMap.on('click',function(){if(popup){popup.remove();popup=null;}});
-    curStop=0;selectStop(pendingStop||0,true);pendingStop=0;setTimeout(fitAll,150);});
-}
-function addLayers(){
-  lineMap.addSource('future',{type:'geojson',data:fullGeo()});
-  lineMap.addLayer({id:'future',type:'line',source:'future',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#8FA3B0','line-width':3,'line-dasharray':[1.5,2],'line-opacity':.5}});
-  lineMap.addSource('grown',{type:'geojson',data:partialGeo(0)});
-  lineMap.addLayer({id:'grown',type:'line',source:'grown',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#C5A572','line-width':5}});
-  STOPS.forEach(function(s,i){var el=markerEl(i);
-    el.addEventListener('click',function(ev){ev.stopPropagation();selectStop(i);});
-    new maplibregl.Marker({element:el,anchor:'bottom'}).setLngLat(s.ll).addTo(lineMap);mkEls.push(el);});
-}
-function setMk(){mkEls.forEach(function(el,i){el.classList.toggle('cur',i===curStop);
-  var hd=el.querySelector('.hd'),num=el.querySelector('text');var p=i<curStop,c=i===curStop;
-  if(hd){hd.setAttribute('fill',c?'#D98C90':p?'#C5A572':'#fff');hd.setAttribute('stroke',c?'#fff':p?'#A6864F':'#5E7688');}
-  if(num)num.setAttribute('fill',(i<=curStop)?'#fff':'#5E7688');});}
-function popHTML(s){var kc={};NARR_KINDS.forEach(function(n){kc[n.k]=n.color;});var first=s.narr.scene?'scene':(s.narr.history?'history':'work');
-  return '<div class="pop"><div class="pi"><img src="'+IMG[s.img]+'" onerror="this.style.display=\'none\'"></div>'
-    +'<div class="pb"><b>'+s.nm[LANG]+'</b><span class="pk" style="background:'+kc[first]+'">'+s.badge[LANG]+'</span>'
-    +'<div class="pt">'+s.narr[first][LANG]+'</div><div class="ps">📸 '+s.spot[LANG]+'</div></div></div>';}
-function selectStop(i,noScroll){
-  curStop=i;
-  document.querySelectorAll('#stops .stc').forEach(function(e,k){e.classList.toggle('active',k===i);e.classList.toggle('passed',k<i);});
-  document.getElementById('clProg').textContent=(i+1)+' / '+STOPS.length;
-  var s=STOPS[i];
-  if(lineMap&&lineMap.getSource('grown')){lineMap.getSource('grown').setData(partialGeo(i));setMk();panTo(s.ll);
-    if(popup)popup.remove();popup=new maplibregl.Popup({offset:30,closeButton:false,maxWidth:'236px'}).setLngLat(s.ll).setHTML(popHTML(s)).addTo(lineMap);}
-  document.getElementById('aria').textContent='第 '+(i+1)+' 站，共 '+STOPS.length+' 站：'+s.nm[LANG];
-  if(history.replaceState)history.replaceState(null,'','#stop='+(i+1));
-  if(!noScroll){var c=document.querySelector('#stops .stc[data-i="'+i+'"]');if(c)document.querySelector('.cl-left').scrollTo({top:c.offsetTop-128,behavior:'smooth'});}
-}
-function panTo(ll){if(!lineMap)return;var p=lineMap.project(ll);var c=lineMap.getContainer();var W=c.offsetWidth,H=c.offsetHeight;
-  if(p.x>W*0.22&&p.x<W*0.78&&p.y>H*0.22&&p.y<H*0.78)return;lineMap.easeTo({center:ll,duration:720,essential:true});}
-function fitAll(){if(lineMap)lineMap.fitBounds(bounds(),{padding:{top:66,bottom:66,left:56,right:56},duration:680});}
-function stepStop(d){var n=curStop+d;if(n<0)n=0;if(n>STOPS.length-1)n=STOPS.length-1;selectStop(n);}
-function toggleAutoplay(){var b=document.getElementById('playBtn'),t=document.getElementById('playTxt');
-  if(autoTimer){stopAuto();return;}b.classList.add('on');t.textContent=LANG==='zh'?'停止':'Stop';
-  if(curStop>=STOPS.length-1)selectStop(0);scheduleNext();}
-function scheduleNext(){if(curStop>=STOPS.length-1){stopAuto();return;}
-  var d=haversine(STOPS[curStop].ll,STOPS[curStop+1].ll);var dwell=Math.max(1500,Math.min(3400,1500+d*1400));
-  autoTimer=setTimeout(function(){selectStop(curStop+1);if(curStop>=STOPS.length-1)setTimeout(stopAuto,1100);else scheduleNext();},dwell);}
-function stopAuto(){if(autoTimer){clearTimeout(autoTimer);autoTimer=null;}
-  document.getElementById('playBtn').classList.remove('on');document.getElementById('playTxt').textContent=LANG==='zh'?'自动播放':'Autoplay';}
-function setBasemap(m){document.getElementById('btVec').classList.toggle('on',m==='vector');document.getElementById('btSat').classList.toggle('on',m==='sat');
-  if(!lineMap)return;lineMap.setStyle(m==='sat'?SAT_STYLE:VECTOR_STYLE);
-  lineMap.once('styledata',function(){setTimeout(function(){addLayers();setMk();lineMap.getSource('grown').setData(partialGeo(curStop));},60);});}
-function openLB(key,cap){var im=document.getElementById('lbImg');im.src=IMG[key];im.style.display='block';
-  document.getElementById('lbCap').textContent='📷 '+cap+' · '+(LANG==='zh'?'图片来自 Wikimedia Commons':'Photo: Wikimedia Commons');
-  document.getElementById('lb').classList.add('show');}
-function toggleFull(){var el=document.getElementById('view-line');
-  if(!document.fullscreenElement){if(el.requestFullscreen)el.requestFullscreen();}else{document.exitFullscreen();}
-  setTimeout(function(){if(lineMap)lineMap.resize();},300);}
-/* 导出行程图: 用 canvas 合成地图截图 */
-function exportTrip(){
-  if(!lineMap){alert('地图未就绪');return;}
-  try{
-    var mapCanvas=lineMap.getCanvas();
-    var W=mapCanvas.width,H=mapCanvas.height;
-    var c=document.createElement('canvas');c.width=W;c.height=H+120;var ctx=c.getContext('2d');
-    ctx.fillStyle='#FCFAF5';ctx.fillRect(0,0,W,H+120);
-    ctx.drawImage(mapCanvas,0,0);
-    ctx.fillStyle='#3A342B';ctx.font='bold 34px serif';ctx.fillText('Emily in Paris · 巴黎故事线',30,H+52);
-    ctx.fillStyle='#867B69';ctx.font='22px sans-serif';ctx.fillText('Lemi\'s Diary · 7 站 · '+STOPS.map(function(s){return s.nm.zh;}).slice(0,3).join(' → ')+' …',30,H+90);
-    var url=c.toDataURL('image/png');var a=document.createElement('a');a.href=url;a.download='lemi-paris-trip.png';a.click();
-  }catch(e){alert(LANG==='zh'?'导出需地图完全加载后重试(部分浏览器限制 canvas 导出)':'Export needs the map fully loaded');}
-}
-function onLangLine(){renderStops();var s=STOPS[curStop];if(popup&&lineMap)popup.setHTML(popHTML(s));}
-
-document.addEventListener('keydown',function(e){if(curView!=='line'||e.target.tagName==='INPUT')return;
-  if(e.key==='ArrowRight'){e.preventDefault();stopAuto();stepStop(1);}
-  else if(e.key==='ArrowLeft'){e.preventDefault();stopAuto();stepStop(-1);}
-  else if(e.key==='Home'){e.preventDefault();stopAuto();selectStop(0);}
-  else if(e.key==='End'){e.preventDefault();stopAuto();selectStop(STOPS.length-1);}});
-window.addEventListener('resize',function(){if(curView==='line'&&lineMap)lineMap.resize();});
-
-</script>
-<script>
-var LANG='zh',curView='world';
-function showView(v){document.querySelectorAll('.view').forEach(function(e){e.classList.remove('active');});document.getElementById('view-'+v).classList.add('active');curView=v;setCrumb();}
-function goWorld(){showView('world');if(!worldMap)renderWorld();}
-function enterHub(){showView('hub');setTab('wall');document.getElementById('suggest').classList.remove('show');}
-function setCrumb(){var c=document.getElementById('crumb');if(curView==='world')c.innerHTML='';else if(curView==='hub')c.innerHTML='<b>巴黎</b>';else c.innerHTML='<b>巴黎</b><span class="sep">/</span>Emily in Paris';}
-function toggleLang(){LANG=LANG==='zh'?'en':'zh';document.getElementById('langBtn').textContent=LANG==='zh'?'中 / EN':'EN / 中';renderWorld();setCrumb();if(curView==='hub')setTab(curTab);if(curView==='line')onLangLine();}
-renderWorld();setCrumb();
-(function(){var m=location.hash.match(/stop=(\d+)/);if(m){enterHub();enterLine();pendingStop=Math.max(0,Math.min(6,+m[1]-1));}})();
 </script>
 </body>
 </html>

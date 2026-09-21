@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lemi 巴黎 · 16 种人格的旅行手账</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+<script>
+/* ============================================================
+ * Lemi 巴黎 · 16 旅行人格 × 16 条故事线  数据层
+ * 坐标 WGS84 [lng,lat]，事实经多源交叉验证（详见 knowledge-base/）
+ * ============================================================ */
+var PARIS = {
+
+/* ---------- 16 人格（沿用《旅行人格测试》原文案，不改写） ---------- */
+personas: [
+ {code:"GOAT", name:"全能管家", c:1,p:1,s:1,$:1, tagline:"和你出去玩，无脑跟就够了",
+  desc:"人形导航+账本+气氛组总控台。行程排得像精密仪器，能把冷门美术馆讲成脱口秀，也能把高级餐厅订得像点外卖。",
+  vibe:"全程丝滑 · 有讲头有排场", budget:"💰💰💰", pace:"紧凑 · 预约全安排", color:"#b8860b"},
+ {code:"CTRL", name:"宝藏团长", c:1,p:1,s:1,$:0, tagline:"CTRL+C 快乐，CTRL+Z 踩坑",
+  desc:"花小钱办大事。社牛属性点满，砍价问路样样精通，钱包没受伤，体验却像开了高级会员。",
+  vibe:"花小钱办大事 · 带队王", budget:"💰", pace:"紧凑 · 免费时段/联票", color:"#2e8b57"},
+ {code:"BLUE", name:"深藏Blue之人", c:1,p:1,s:0,$:1, tagline:"To be or not to be...",
+  desc:"旅行像拍一部高级文艺片：人声静音，画面留白，连酒店窗帘的褶皱都值得品味。选择不一定多，但都有品味。",
+  vibe:"一个人的高级文艺片", budget:"💰💰💰", pace:"从容 · 私享包场", color:"#4a6fa5"},
+ {code:"NERD", name:"学者", c:1,p:1,s:0,$:0, tagline:"行走的百科全书 📖",
+  desc:"别人站在文物前拍照，你已在脑内播放年代沿革和学术争议。把博物馆逛成论文答辩，慢慢走慢慢看。",
+  vibe:"把城市逛成论文答辩", budget:"💰", pace:"极慢 · 深度啃展", color:"#5d6d7e"},
+ {code:"DODO", name:"干就完了", c:1,p:0,s:1,$:1, tagline:"Just do it.",
+  desc:"来都来了，走哪算哪。三句话和本地人混成熟人，五分钟解锁一条游客地图上没有的支线剧情。",
+  vibe:"欧皇的隐藏支线", budget:"💰💰💰", pace:"即兴 · 现场社交", color:"#e07b39"},
+ {code:"MYTH", name:"拾光者", c:1,p:0,s:1,$:0, tagline:"我有酒，你有故事吗",
+  desc:"轻盈敏锐，专门收集别人会错过的小瞬间。一路走一路捡故事，把城市的旧时光一片片放进回忆。",
+  vibe:"一路捡故事的人", budget:"💰", pace:"松散 · 慢逛闲聊", color:"#b08d57"},
+ {code:"LORD", name:"大小姐", c:1,p:0,s:0,$:1, tagline:"大小姐驾到，统统闪开",
+  desc:"不做攻略，因为本人就是最优解。别吵、别挤、别将就，钞能力会帮你优雅绕开一切狼狈。",
+  vibe:"钞能力绕开所有狼狈", budget:"💰💰💰", pace:"极松 · 私享避开人潮", color:"#9b59b6"},
+ {code:"BUDD", name:"清冷佛子", c:1,p:0,s:0,$:0, tagline:"无上甚深微妙法，功德+10086",
+  desc:"不争不抢不赶不卷。随遇而安，看山即是山，旅行于你更像一场修行。",
+  vibe:"一场城市修行", budget:"💰", pace:"随缘 · 独处静坐", color:"#7f8c8d"},
+ {code:"BOSS", name:"煤老板", c:0,p:1,s:1,$:1, tagline:"预算到位，排面必须拉满",
+  desc:"讲究效率和体验，绝不委屈自己。攻略要满、车要好、饭要香，花钱是给快乐打预付款。",
+  vibe:"效率+排面拉满", budget:"💰💰💰", pace:"高效 · VIP 免排队", color:"#8b4513"},
+ {code:"TIME", name:"时间管理大师", c:0,p:1,s:1,$:0, tagline:"时间差不多咯",
+  desc:"对时间和预算的掌控精确得像瑞士钟表。别人三天打卡的东西，你一天丝滑搞定，九宫格已出炉。",
+  vibe:"一天刷完三天的量", budget:"💰", pace:"高密度 · 地铁暴走", color:"#c0392b"},
+ {code:"FREE", name:"多比", c:0,p:1,s:0,$:1, tagline:"Dobby is free!",
+  desc:"醒了，恭喜你已经是自由的小精灵。不必被任何人束缚，也不担心预算，但自由的每一天都值得好好规划。",
+  vibe:"拿回一切的自由精灵", budget:"💰💰💰", pace:"有计划地尽情享受", color:"#16a085"},
+ {code:"WIND", name:"追风筝的人", c:0,p:1,s:0,$:0, tagline:"千千万万遍",
+  desc:"像风一样出发，只为奔赴山野与热爱。不追人群不卷排面，把有限预算和体力花在真正想去的地方。",
+  vibe:"像风一样奔赴热爱", budget:"💰", pace:"路线清晰 · 暴走野餐", color:"#2980b9"},
+ {code:"SHAN", name:"慈善家", c:0,p:0,s:1,$:1, tagline:"善哉善哉",
+  desc:"神仙旅行搭子。不爱做攻略也不计较细节，情绪价值永远满仓。氛围投资人，非你莫属。",
+  vibe:"氛围投资人，开心就买单", budget:"💰💰💰", pace:"松散 · 热闹至上", color:"#d35400"},
+ {code:"BEE", name:"小蜜蜂", c:0,p:0,s:1,$:0, tagline:"快乐是最重要的，其次都是其次",
+  desc:"天生闲不下来，哪里有趣往哪飞。预算有限没关系，会用多到溢出的能量把聚会 high 成嘉年华。",
+  vibe:"哪里有趣往哪飞", budget:"💰", pace:"跳点 · 高能狂欢", color:"#f39c12"},
+ {code:"REST", name:"休息者", c:0,p:0,s:0,$:1, tagline:"能躺着不坐着，能坐着不站着",
+  desc:"抢不到票该休息了，景点人多该休息了。不是来卷的，是来回血的，只想换个城市躺平。",
+  vibe:"换个城市躺平回血", budget:"💰💰💰", pace:"极慢 · 绝不暴走", color:"#8e7cc3"},
+ {code:"CUTE", name:"史莱姆", c:0,p:0,s:0,$:0, tagline:"噗叽噗叽～",
+  desc:"软萌随性的盲盒式玩家。不做攻略不设目标，掉到哪里都能适应。饿了就吃，累了就歇。",
+  vibe:"软萌盲盒，随遇而安", budget:"💰", pace:"零压力 · 边走边吃", color:"#e91e63"}
+],
+
+/* ---------- 精选 POI 主表（demo 线路所用，约 60） ---------- */
+pois: {
+/* —— 地标·景观 —— */
+eiffel:{n:"埃菲尔铁塔",fr:"Tour Eiffel",c:[2.2945,48.8582],area:"7区",cat:"地标",hook:"本来只打算活 20 年，结果靠无线电天线活成了巴黎的脸。",tip:"官网提前订时段票；天黑后每整点闪 5 分钟。"},
+trocadero:{n:"特罗卡德罗广场",fr:"Trocadéro",c:[2.2893,48.8614],area:"16区",cat:"观景",hook:"全世界明信片都在这儿拍，而清晨六点，整个机位只属于你。",tip:"日出包场；扒手和兜售小贩密集。"},
+champmars:{n:"战神广场",fr:"Champ de Mars",c:[2.2985,48.8556],area:"7区",cat:"公园",hook:"法棍奶酪格子布一铺，铁塔每整点为你闪五分钟。",tip:"免费；16:00 后禁酒，玻璃瓶会被没收。"},
+arctriomphe:{n:"凯旋门",fr:"Arc de Triomphe",c:[2.29503,48.87378],area:"8区",cat:"地标",hook:"拿破仑到死没见它建成，遗体倒是先穿门而过。",tip:"走地下通道，绝不能横穿环岛；登顶看日落。"},
+concorde:{n:"协和广场",fr:"Place de la Concorde",c:[2.32124,48.86563],area:"8区",cat:"地标",hook:"砍掉国王的头，又搬来一块 3000 岁的埃及方尖碑压场。",tip:"开放式免费；车多走地下通道。"},
+louvre:{n:"卢浮宫",fr:"Musée du Louvre",c:[2.3358,48.8611],area:"1区",cat:"博物馆",hook:"贝聿铭的金字塔曾被骂成迪士尼分园，如今是巴黎名片。",tip:"周二闭馆；务必官网订时段票，开门冲三宝。"},
+orsay:{n:"奥赛博物馆",fr:"Musée d'Orsay",c:[2.32653,48.85997],area:"7区",cat:"博物馆",hook:"差点被拆的老火车站，如今是全世界印象派的圣殿。",tip:"周一闭馆；周四晚开到 21:45 人最少；2026 接待区施工。"},
+orangerie:{n:"橘园美术馆",fr:"Musée de l'Orangerie",c:[2.32254,48.86385],area:"1区",cat:"博物馆",hook:"莫奈把晚年心力全交给这两间椭圆睡莲厅。",tip:"周二闭馆；订上午 9 点首场几乎包场。"},
+marmottan:{n:"玛摩丹莫奈美术馆",fr:"Musée Marmottan",c:[2.2673,48.8593],area:"16区",cat:"博物馆",hook:"给印象派命名的那幅《日出·印象》，睡在这间低调小馆。",tip:"周一闭馆；游客最少看莫奈最从容。"},
+pompidou:{n:"蓬皮杜中心",fr:"Centre Pompidou",c:[2.35225,48.86064],area:"4区",cat:"博物馆",hook:"1977 年把水管电梯全翻到外墙，被骂作'管道圣母'。",tip:"2025-09 起闭馆大修至 2030，现只能看外观广场。"},
+rodin:{n:"罗丹博物馆",fr:"Musée Rodin",c:[2.31583,48.85528],area:"7区",cat:"博物馆",hook:"雕塑家把全部作品捐给国家换一座馆，还附带梵高私人收藏。",tip:"周一闭；可只买花园票看《思想者》。"},
+notredame:{n:"巴黎圣母院·西岱岛",fr:"Île de la Cité / Notre-Dame",c:[2.3500,48.8531],area:"西岱岛",cat:"地标",hook:"巴黎不是从两岸长出来的，是从这座小岛上坐船漂来的。",tip:"本体免费需官网预约；2024-12 已重开。"},
+saintechap:{n:"圣礼拜堂",fr:"Sainte-Chapelle",c:[2.3450,48.8553],area:"西岱岛",cat:"地标",hook:"1113 个彩窗画面，是辐射式哥特的'光之神龛'。",tip:"与古监狱买联票最划算；晴天正午彩窗最炸。"},
+conciergerie:{n:"古监狱",fr:"Conciergerie",c:[2.3456,48.8564],area:"西岱岛",cat:"历史",hook:"王后生命最后 76 天，在宪兵注视里度过。",tip:"联票含赎罪小堂；1–1.5 小时。"},
+pantheon:{n:"先贤祠",fr:"Panthéon",c:[2.34583,48.84611],area:"5区",cat:"历史",hook:"在教堂和'伟人公墓'间横跳了快一百年，谁配进来说了算。",tip:"下墓室看伏尔泰卢梭雨果；可登顶。"},
+versailles:{n:"凡尔赛宫",fr:"Château de Versailles",c:[2.12035,48.80486],area:"近郊",cat:"地标",hook:"太阳王把宫廷变成每天定时上演的权力机器。",tip:"RER C 约 40 分钟；务必官网订时段票，留一整天。"},
+palaisgarnier:{n:"加尼叶歌剧院",fr:"Palais Garnier",c:[2.33167,48.87194],area:"9区",cat:"地标",hook:"艾米莉看芭蕾的地方，本身就是《歌剧魅影》的案发现场。",tip:"可白天购票参观，约 1–1.5 小时。"},
+bastille:{n:"巴士底广场",fr:"Place de la Bastille",c:[2.36917,48.85306],area:"4/11/12区",cat:"历史",hook:"革命'攻占'的监狱只关着 7 个人，真正的战利品是火药。",tip:"监狱已不存，地面有堡垒轮廓标记。"},
+/* —— 河与桥 —— */
+pontneuf:{n:"新桥",fr:"Pont Neuf",c:[2.34167,48.8575],area:"1区",cat:"河桥",hook:"名叫'新桥'，却是巴黎现存最老的桥。",tip:"日落到岛尖 Square du Vert-Galant。"},
+pontarts:{n:"艺术桥",fr:"Pont des Arts",c:[2.3375,48.8583],area:"1区",cat:"河桥",hook:"曾被 45 吨爱情锁压垮，如今换成了透明护栏。",tip:"透明板成最好画框；别再带锁。"},
+pontalex:{n:"亚历山大三世桥",fr:"Pont Alexandre III",c:[2.31361,48.86361],area:"8区",cat:"河桥",hook:"末代沙皇亲手奠基，21 年后王朝没了，镀金飞马还在飞。",tip:"日落前 30 分钟金雕反光最华丽。"},
+ilestlouis:{n:"圣路易岛",fr:"Île Saint-Louis",c:[2.35639,48.85167],area:"4区",cat:"河桥",hook:"17 世纪一次性开发的贵族岛，最牛展品却是家冰淇淋店。",tip:"买 Berthillon 到 Pont Saint-Louis 桥上吃。"},
+bouquinistes:{n:"塞纳河旧书摊",fr:"Bouquinistes",c:[2.34728,48.85296],area:"河岸",cat:"小众",hook:"世界上唯一一条夹在两排书架之间流动的河。",tip:"看天出摊，约 11:30 至日落；砍价是常态。"},
+seinrives:{n:"塞纳河岸公园",fr:"Rives de Seine",c:[2.3265,48.8597],area:"河岸",cat:"公园",hook:"巴黎人把河边汽车公路搬空，还给了跑步和谈恋爱的人。",tip:"免费躺椅跑步道；夜间走主步道。"},
+canal:{n:"圣马丁运河",fr:"Canal Saint-Martin",c:[2.3650,48.8700],area:"10区",cat:"河桥",hook:"巴黎年轻人夏夜不在酒吧，在运河石阶上一人一瓶酒看船过闸。",tip:"周日沿岸禁机动车；16:00 后用罐装酒。"},
+samaritaine:{n:"莎玛丽丹百货",fr:"La Samaritaine",c:[2.34208,48.85889],area:"1区",cat:"建筑",hook:"1870 的新艺术河畔百货，关掉 16 年后重新开门。",tip:"顶层可俯瞰新桥与西岱岛。"},
+/* —— 文学 —— */
+flore:{n:"花神咖啡馆",fr:"Café de Flore",c:[2.33264,48.85417],area:"6区",cat:"文学",hook:"萨特波伏娃蹭炉子取暖写作的位子，今天一杯咖啡卖 6 欧。",tip:"点一杯小黑即可；早上 7:30–9:00 人最少。"},
+deuxmagots:{n:"双叟咖啡馆",fr:"Les Deux Magots",c:[2.3332,48.854],area:"6区",cat:"文学",hook:"名字来自丝绸杂货铺和两个中国清代人像。",tip:"与花神对门百年世仇；午餐常排队。"},
+shakespeare:{n:"莎士比亚书店",fr:"Shakespeare and Company",c:[2.34694,48.8525],area:"5区",cat:"文学",hook:"允许穷作家睡书架间，代价是每天读一本书、留一页自传。",tip:"免费进无需消费，旺季限流排队。"},
+procope:{n:"普罗科普咖啡馆",fr:"Le Procope",c:[2.33881,48.8525],area:"6区",cat:"美食",hook:"1686 年全巴黎咖啡馆的祖宗，启蒙运动在这吵出来。",tip:"如今是正餐餐厅，午市套餐性价比高。"},
+maisonhugo:{n:"雨果故居",fr:"Maison de Victor Hugo",c:[2.36611,48.85486],area:"4区",cat:"文学",hook:"他在这里站着写了 16 年，因为根本不信椅子。",tip:"常设免费；周一闭；在孚日广场拱廊下。"},
+/* —— 时尚·建筑·小众 —— */
+vendome:{n:"旺多姆广场",fr:"Place Vendôme",c:[2.3294,48.8675],area:"1区",cat:"时尚",hook:"太阳王、拿破仑、巴黎公社和全球珠宝商，挤在一座八角广场。",tip:"24h 免费，看柱与珠宝橱窗零消费。"},
+chanel:{n:"香奈儿康朋街31号",fr:"31 rue Cambon",c:[2.3283,48.8666],area:"1区",cat:"时尚",hook:"她白天在这统治时尚，夜里回丽兹睡——一栋没有卧室的寓所。",tip:"仅底层精品店与镜梯底部可入，寓所不开放。"},
+palaisroyal:{n:"皇宫·Buren黑白柱",fr:"Palais-Royal",c:[2.33694,48.86361],area:"1区",cat:"小众",hook:"260 根黑白条纹柱当年差点被拆，如今成最上镜地标。",tip:"柱庭花园免费，黄昏人最少。"},
+vivienne:{n:"维维安妮长廊",fr:"Galerie Vivienne",c:[2.3397,48.8667],area:"2区",cat:"小众",hook:"推开不起眼的门，1820 年代的室内巴黎在玻璃穹顶下等你。",tip:"穿街免费；各店多周一闭，宜周二至六白天。"},
+vosges:{n:"孚日广场",fr:"Place des Vosges",c:[2.36556,48.85556],area:"4区",cat:"建筑",hook:"巴黎最古老的规划皇家广场，红砖白石围出时间胶囊。",tip:"工作日早晨最静；雨果故居在东南角。"},
+perelachaise:{n:"拉雪兹神父公墓",fr:"Père Lachaise",c:[2.3950,48.8600],area:"20区",cat:"小众",hook:"当年靠'迁名人遗骸做广告'逆袭，如今成死亡主题 5A 景区。",tip:"免费；正门进 Gambetta 出顺势下坡；拿地图。"},
+catacombes:{n:"地下墓穴",fr:"Les Catacombes",c:[2.33222,48.83389],area:"14区",cat:"小众",hook:"下 243 级台阶，钻进 600 万巴黎人骨头砌成墙的地下城。",tip:"提前 7 天官网抢票；恒温 14℃；出口距入口 700 米。"},
+mtparnassecem:{n:"蒙帕纳斯公墓",fr:"Cimetière du Montparnasse",c:[2.32694,48.83806],area:"14区",cat:"小众",hook:"存在主义情侣合葬一穴，墓碑被女粉丝印满口红。",tip:"免费；萨特-波伏娃在 division 20。"},
+/* —— 艾米莉 / 爱美丽 —— */
+estrapade:{n:"埃斯特拉帕德广场",fr:"Place de l'Estrapade",c:[2.3448,48.8452],area:"5区",cat:"影视",hook:"艾米莉'美式狼狈'的全部起点，就在这个本地人打 pétanque 的小广场。",tip:"私人住宅不是景点；拍照安静勿堵门。"},
+terranera:{n:"特拉内拉餐厅",fr:"Terra Nera",c:[2.34433,48.84544],area:"5区",cat:"影视",hook:"剧里是诺曼底法式小馆，推门进去——是家地道意大利餐厅。",tip:"强烈建议提前订位；红门面是出片机位。"},
+boulangerie:{n:"现代面包店(16号)",fr:"Boulangerie Moderne",c:[2.34419,48.8455],area:"5区",cat:"美食",hook:"让艾米莉沦陷的那口巧克力面包，店主拿过巴黎可颂银奖。",tip:"周一至五约 7–20 点；周日休。"},
+placevalois:{n:"瓦卢瓦广场",fr:"Place de Valois",c:[2.3376,48.8636],area:"1区",cat:"影视",hook:"Savoir 公司那扇门，现实里挨着家 Art Déco 古董画廊。",tip:"进不去室内；可在 Bistrot Valois 喝一杯。"},
+deuxmoulins:{n:"双磨坊咖啡馆",fr:"Café des Deux Moulins",c:[2.33361,48.88493],area:"18区",cat:"影视",hook:"爱美丽端盘子、心事全写在脸上的地方，就在红磨坊街角。",tip:"可只点咖啡；招牌 crème brûlée。"},
+collignon:{n:"科利尼翁杂货铺",fr:"Maison Collignon",c:[2.33835,48.8857],area:"18区",cat:"影视",hook:"刻薄老板的虚构招牌，20 多年后还挂在现实杂货店门头上。",tip:"拍照前先买点东西；找藏着的小矮人彩蛋。"},
+sacrecoeur:{n:"圣心堂·蒙马特",fr:"Sacré-Cœur",c:[2.34306,48.88694],area:"18区",cat:"地标",hook:"跟着爱美丽的蓝色箭头爬上山顶，整座巴黎在白教堂脚下摊开。",tip:"缆车可上山；防手绳强卖；圆顶另购票。"},
+tertre:{n:"画家广场",fr:"Place du Tertre",c:[2.34083,48.88667],area:"18区",cat:"艺术",hook:"满街画架看似很俗，但毕加索梵高都在这的酒馆桌边坐过。",tip:"清晨工作日最舒服；画像先谈好价。"},
+wallove:{n:"爱墙",fr:"Le Mur des Je t'aime",c:[2.33843,48.88463],area:"18区",cat:"影视",hook:"深蓝熔岩墙上，311 次书写、约 250 种语言说'我爱你'。",tip:"免费小公园；注意它并非《爱美丽》镜头。"},
+/* —— 美食 —— */
+chartier:{n:"沙尔捷肉汤食堂",fr:"Bouillon Chartier",c:[2.34361,48.87333],area:"9区",cat:"美食",hook:"账单直接写在纸桌布上，一顿正经法餐 20 欧搞定。",tip:"不接受订位；18 点开门即到或 21:30 后不排队。"},
+enfantsrouges:{n:"红孩子市场",fr:"Marché des Enfants Rouges",c:[2.3620,48.8628],area:"3区",cat:"美食",hook:"1615 年的木顶菜市场里，塔吉锅和日式便当在同条巷里打架。",tip:"周一休；一人占位一人分头买；拼桌。"},
+mouffetard:{n:"穆浮塔市集街",fr:"Rue Mouffetard",c:[2.34966,48.84282],area:"5区",cat:"美食",hook:"一条没被奥斯曼动过的罗马古道，两千年还在摆摊叫卖。",tip:"周二至日上午；周一基本无市。"},
+fallafel:{n:"法拉费之王",fr:"L'As du Fallafel",c:[2.35907,48.85743],area:"4区",cat:"美食",hook:"排队堵半条街的鹰嘴豆丸口袋饼，塞到合不上口。",tip:"周五傍晚+周六安息日歇；外带最快。"},
+laduree:{n:"拉杜丽",fr:"Ladurée",c:[2.32363,48.86842],area:"8区",cat:"美食",hook:"你买的粉绿马卡龙，其实是 1930 年代才发明的夹馅版。",tip:"单粒约 2.5–3€；外带窗口比茶室快。"},
+angelina:{n:"安吉丽娜茶室",fr:"Angelina",c:[2.32843,48.86494],area:"1区",cat:"美食",hook:"1903 年的热巧'非洲人'，今天依然稠到能立住勺子。",tip:"开店即到避队；人均 15–25€。"},
+berthillon:{n:"贝蒂永冰淇淋",fr:"Berthillon",c:[2.35669,48.85169],area:"4区",cat:"美食",hook:"日产封顶 1000 升、学校放假就闭店，任性七十年排队绕岛转。",tip:"周一二休、暑假长休；岛上代售咖啡馆更快。"},
+dupain:{n:"面包与创意",fr:"Du Pain et des Idées",c:[2.36289,48.87125],area:"10区",cat:"美食",hook:"周末铁打不动关门，还能让全巴黎工作日排队的面包店。",tip:"周六日休；早 8 点前最齐；运河边。"},
+/* —— 公园·放空 —— */
+luxembourg:{n:"卢森堡公园",fr:"Jardin du Luxembourg",c:[2.3372,48.8469],area:"6区",cat:"公园",hook:"抢一把能拖走的绿椅子对水池发呆，你立刻变成巴黎人。",tip:"免费；随季节开关门；美第奇喷泉一侧安静。"},
+tuileries:{n:"杜乐丽花园",fr:"Jardin des Tuileries",c:[2.3294,48.8635],area:"1区",cat:"公园",hook:"从卢浮宫一路躺到协和广场，城正中 23 公顷绿色懒骨头。",tip:"免费；摩天轮仅夏季 Fête des Tuileries。"},
+buttes:{n:"肖蒙山丘公园",fr:"Buttes-Chaumont",c:[2.3811,48.8769],area:"19区",cat:"公园",hook:"市中心藏了悬崖溶洞悬桥的迷你'小瑞士'，旅行团不来。",tip:"免费；中央岛神庙亭施工封闭，悬桥湖景仍在。"},
+vincennes:{n:"文森森林·划船",fr:"Bois de Vincennes",c:[2.4100,48.8330],area:"12区",cat:"公园",hook:"地铁半小时，十几欧划小船钻进天鹅群。",tip:"划船约 15€/h；森林只白天进、日落离开。"},
+galeries:{n:"老佛爷百货天台",fr:"Galeries Lafayette",c:[2.3322,48.8733],area:"9区",cat:"购物",hook:"不买一分钱，电梯到 8 楼，歌剧院铁塔锌屋顶同框。",tip:"天台免费；穹顶在 1 楼；日落蓝调最出片。"},
+perchoir:{n:"Le Perchoir 屋顶酒吧",fr:"Le Perchoir",c:[2.38203,48.86544],area:"11区",cat:"夜生活",hook:"巴黎屋顶酒吧风潮鼻祖，7 楼露台正对圣心堂。",tip:"免费入场鸡尾酒约 13–15€；周末务必订位。"},
+/* —— 购物 —— */
+puces:{n:"圣图安跳蚤市场",fr:"Puces de Saint-Ouen",c:[2.3380,48.9040],area:"近郊",cat:"购物",hook:"全世界最大旧货王国，14 个市场近 2000 摊位走不出去。",tip:"周末上午；穿过高架才是真市场；防扒带现金。"},
+pucesvanves:{n:"旺夫门跳蚤市场",fr:"Puces de Vanves",c:[2.3053,48.8222],area:"14区",cat:"购物",hook:"市区内唯一正规跳蚤市场，本地摊主多，价格更良心。",tip:"周末 7–14 点，10 点前到。"},
+marchefleurs:{n:"西岱岛花鸟市场",fr:"Marché aux Fleurs",c:[2.3476,48.8557],area:"西岱岛",cat:"购物",hook:"圣母院脚下的绿色玻璃花房，市中心最'仙'的免费布景。",tip:"周一至六；周日鸟市已停办，别期待。"},
+champs:{n:"香榭丽舍大街",fr:"Champs-Élysées",c:[2.3068,48.8695],area:"8区",cat:"购物",hook:"一头凯旋门一头方尖碑，购物打卡一次解决。",tip:"周日也开；人多防扒；同款不便宜。"},
+montaigne:{n:"蒙田大道",fr:"Avenue Montaigne",c:[2.3058,48.8660],area:"8区",cat:"购物",hook:"预算为零也值得来——高奢橱窗本身就是免费时装展。",tip:"window shopping 无压力；进店可能限流。"},
+kiliwatch:{n:"玛黑古着街",fr:"Kiliwatch / Le Marais",c:[2.3455,48.8648],area:"2区",cat:"购物",hook:"600㎡ vintage 仓库，随便一站就是街拍。",tip:"Kiliwatch 周日休；玛黑主街周日最热闹。"},
+/* —— 夜生活 —— */
+moulinrouge:{n:"红磨坊",fr:"Moulin Rouge",c:[2.3325,48.88417],area:"18区",cat:"夜生活",hook:"全世界最著名的红色风车，羽毛亮片劈腿全开。",tip:"提前 2–4 周订；smart elegant 着装；约 €128 起。"},
+crazyhorse:{n:"疯马秀",fr:"Le Crazy Horse",c:[2.30166,48.86598],area:"8区",cat:"夜生活",hook:"红磨坊给游客，疯马给懂的人——用灯光给裸体'穿衣服'。",tip:"约 €115 起；优雅着装；一个人去也 OK。"},
+bateaux:{n:"塞纳河游船晚餐",fr:"Bateaux Mouches",c:[2.30643,48.86411],area:"8区",cat:"夜生活",hook:"坐着吃饭就把亮灯巴黎看完，铁塔在窗外现场闪。",tip:"smart dress；提前 30 分到；20:30 场撞整点闪灯。"},
+lappe:{n:"巴士底酒吧街",fr:"Rue de Lappe",c:[2.37297,48.85356],area:"11区",cat:"夜生活",hook:"一条石板街塞满几十家酒吧，端着酒杯站着喝才对。",tip:"happy hour 18–20 点最省；pub crawl 约 €25。"},
+comptoir:{n:"Le Comptoir Général",fr:"Le Comptoir Général",c:[2.36514,48.87218],area:"10区",cat:"夜生活",hook:"运河边藏着 600㎡ 殖民航海风旧仓库，热带温室+珍奇柜。",tip:"20 点后大排长龙，18 点前到；鸡尾酒约 €10。"},
+/* —— 奢华治愈 —— */
+julesverne:{n:"儒勒·凡尔纳餐厅",fr:"Le Jules Verne",c:[2.29449,48.85825],area:"7区",cat:"米其林",hook:"在铁塔肚子里 125 米高空吃正经二星，私人电梯不跟游客挤。",tip:"提前 90 天放票抢日落位；男士着外套；约 €295 起。"},
+lecinq:{n:"五号餐厅(乔治五世)",fr:"Le Cinq",c:[2.30025,48.8688],area:"8区",cat:"米其林",hook:"水晶灯鲜花宫殿，连续十年米其林三星。",tip:"提前 1–2 月订；预算 €400+/人；仅晚餐。"},
+legeorge:{n:"乔治餐厅",fr:"Le George",c:[2.30082,48.8688],area:"8区",cat:"米其林",hook:"同一座宫殿，一星的账单、三星的排场，午市最香。",tip:"午市约 €65 起；提前 2–4 周；订玻璃花院位。"},
+salonproust:{n:"丽兹普鲁斯特下午茶",fr:"Salon Proust",c:[2.32846,48.86754],area:"1区",cat:"治愈",hook:"在普鲁斯特的角落，吃一口现实版玛德琳。",tip:"约 €68；提前 1–3 月订；2026 起咸甜双线。"},
+chanelspa:{n:"丽兹香奈儿SPA",fr:"Chanel au Ritz",c:[2.32846,48.86754],area:"1区",cat:"治愈",hook:"在 Coco 住了 34 年的酒店，躺进 Coromandel 屏风灵感护理房。",tip:"护理 €300 起，含泳池套餐更值；提前 2–4 周。"},
+calife:{n:"哈里发号游船晚餐",fr:"Le Calife",c:[2.33602,48.85748],area:"6区",cat:"夜生活",hook:"东方快车气质老木船，把塞纳河包场 2 小时，终点停在闪灯铁塔前。",tip:"€109 起含酒；提前 2–4 周订全玻璃顶层。"},
+hammam:{n:"大清真寺茶室+土耳其浴",fr:"Grande Mosquée de Paris",c:[2.35408,48.84319],area:"5区",cat:"治愈",hook:"花丽兹下午茶零头的钱，在马赛克蒸汽房把累蒸干净，再喝 €2 薄荷茶。",tip:"套餐约 €50；男女分时段；不用预约。"}
+}
+
+};
+
+</script>
+<script>
+/* ============================================================
+ * Lemi 巴黎 · 16 人格专属线路
+ * 每条线 stops: poiId + 为该人格定制的"打开方式"(open)
+ * 核心 POI 大量复用，差异在打开方式 / 顺序 / 2-4 个专属点
+ * ============================================================ */
+var ROUTES = {
+
+/* ===== 高文化 × 高规划 ===== */
+GOAT:{ title:"管家的丝滑巴黎：顶流、名店与全队",
+ stops:[
+  {id:"louvre",open:"提前订好开门时段票，带队直冲三宝，把每幅画讲成脱口秀——时间卡到分钟。"},
+  {id:"palaisgarnier",open:"订好包厢或讲解位，把《歌剧魅影》的吊灯悬案当故事讲给全队听。"},
+  {id:"lecinq",open:"提前两个月订好的晚餐，水晶灯鲜花走廊，你只负责优雅带人入座。"},
+  {id:"arctriomphe",open:"日落票登顶，18:30 准时看长明火重燃，全队零等待。"},
+  {id:"moulinrouge",open:"周末深夜场 VIP 座+香槟早已订好，散场直接安排车，没人需要找路。"},
+  {id:"galeries",open:"退税柜台和 concierge 都打好招呼，买完上楼台一杯酒看铁塔点灯收尾。"}
+ ], end:"和你出门，大家连迷路的机会都没有——巴黎最顶的排场，被你安排得像点外卖。"},
+
+CTRL:{ title:"宝藏团长的高性价比文艺队",
+ stops:[
+  {id:"louvre",open:"每月第一个周日免费夜场（需预约）带队冲，省下的门票钱够全队吃一顿。"},
+  {id:"orsay",open:"周四晚人最少票价更优，把印象派讲得头头是道，值回每一分钱。"},
+  {id:"chartier",open:"21:30 后带队来不用排，纸桌布账单人均 20 欧，社牛你负责拼桌破冰。"},
+  {id:"pucesvanves",open:"周末 7 点杀到跳蚤市场，你砍价问路样样行，帮全队淘到宝。"},
+  {id:"sacrecoeur",open:"缆车上山不排队，免费看全景，你三句话和路边画家聊成朋友。"},
+  {id:"galeries",open:"全程免费天台收官，帮全队算清同店满 100€ 退税，钱包毫发无伤。"}
+ ], end:"CTRL+C 快乐，CTRL+Z 踩坑——跟着你，钱包没受伤，体验却像开了高级会员。"},
+
+BLUE:{ title:"一个人的高级文艺片",
+ stops:[
+  {id:"orangerie",open:"订上午 9 点首场，一个人包场椭圆厅，在睡莲∞无穷符号里安静坐到想走。"},
+  {id:"shakespeare",open:"不赶时间地翻旧书、看 Tumbleweed 床位，和店员低声聊一段乔伊斯。"},
+  {id:"salonproust",open:"壁炉位下午茶早已订好，两小时法式甜静，人声静音、画面留白。"},
+  {id:"marmottan",open:"全城最安静的莫奈小馆，独自面对《日出·印象》，没有旅行团。"},
+  {id:"julesverne",open:"南柱私人电梯直达，不与登塔人潮擦肩，日落窗边位留给自己。"},
+  {id:"pontarts",open:"黄昏在透明护栏后一个人看卢浮宫与西岱岛，不带爱情锁，只带留白。"}
+ ], end:"你不一定话多，但你的选择从来都有品味——巴黎为你调成了静音与暖光。"},
+
+NERD:{ title:"学者的巴黎：把城市逛成论文答辩",
+ stops:[
+  {id:"louvre",open:"开门即入，按艺术史时间轴系统地看，三宝之外追着策展脉络走一整天。"},
+  {id:"orsay",open:"1848–1914 专馆慢慢啃，对着印象派考据笔触与沙龙拒绝史。"},
+  {id:"saintechap",open:"数清 1113 个彩窗画面，连带古监狱联票，把中世纪王权与监狱一起读完。"},
+  {id:"pantheon",open:"下墓室逐个对入葬年份，研究傅科摆怎么证明地球自转。"},
+  {id:"maisonhugo",open:"在雨果立桌前核对他 1832 才入住、《巴黎圣母院》1831 已出版的时间线。"},
+  {id:"catacombes",open:"提前 7 天抢到的票，在 600 万具遗骨墙前读 18 世纪公共卫生改革。"}
+ ], end:"门票交通你算得明明白白，慢慢走慢慢看——这才配得上一座城市真正的灵魂。"},
+
+/* ===== 高文化 × 低规划 ===== */
+DODO:{ title:"干就完了：欧皇的隐藏支线",
+ stops:[
+  {id:"shakespeare",open:"没有清单，推门就和店主聊，顺势被推荐一本当场买下的旧书。"},
+  {id:"flore",open:"不订位，吧台一坐和邻座聊萨特，三分钟解锁一个本地人才知道的据点。"},
+  {id:"canal",open:"跟着下班人群走到运河石阶坐下，转头就加入一群陌生人的 apéro。"},
+  {id:"perchoir",open:"兴致一来直接上屋顶，现场拼桌认识朋友，点杯酒看圣心堂亮灯。"},
+  {id:"lappe",open:"哪吵往哪钻，端着酒杯站在街上，五分钟被拉进一场 pub crawl。"},
+  {id:"julesverne",open:"运气好捡到当日取消的窗边位，来都来了——果断升级，欧皇从不含糊。"}
+ ], end:"计划是什么？你相信欧皇自会解锁隐藏惊喜——而巴黎从不辜负敢推门的人。"},
+
+MYTH:{ title:"拾光者：一路把旧时光捡进口袋",
+ stops:[
+  {id:"bouquinistes",open:"不看清单，在绿皮箱前和摊主慢慢翻，捡一张泛黄明信片和一段往事。"},
+  {id:"mouffetard",open:"顺着罗马古道下坡，在奶酪摊和老板闲聊，把市井切片收进回忆。"},
+  {id:"shakespeare",open:"在书架夹缝里读别人留下的一页页自传，光与尘都很慢。"},
+  {id:"ilestlouis",open:"买一支野草莓雪葩坐在桥头，看游船把金色塞纳河切成两半。"},
+  {id:"canal",open:"傍晚看水闸放行、铁桥旋转，把刚刚好的那阵风写成回忆录。"},
+  {id:"perelachaise",open:"不按地图，在墓碑与树影间偶遇王尔德、肖邦和一个安静的下午。"}
+ ], end:"旧街角一束夕阳、窗边一阵刚好的风，到了你这里都被写成了传说。"},
+
+LORD:{ title:"大小姐驾到：钞能力绕开所有狼狈",
+ stops:[
+  {id:"chanelspa",open:"提前订好含泳池的护理，浴袍选香都备好，你只管躺下，排队与你无关。"},
+  {id:"legeorge",open:"同一座乔治五世宫殿，玻璃花院午餐，一星账单买三星排场，人少安静。"},
+  {id:"louvre",open:"私人导览+非开放时段入场，安安静静看蒙娜丽莎，没人在你背后举手机。"},
+  {id:"salonproust",open:"壁炉位下午茶，名媛式两小时，不用排队、不用将就。"},
+  {id:"calife",open:"包下老木船顶层全玻璃位，塞纳河与闪灯铁塔只为你一人转场。"},
+  {id:"buttes",open:"让车直接送到山脚，在无人的悬桥边独享整片悬崖与湖景，不挤不累。"}
+ ], end:"别吵、别挤、别将就——你的巴黎没有狼狈，只有被云朵托管的优雅。"},
+
+BUDD:{ title:"清冷佛子的城市修行",
+ stops:[
+  {id:"saintechap",open:"不拍照不赶场，坐在彩窗光柱里，让 1113 扇玻璃替你安静下来。"},
+  {id:"luxembourg",open:"拖一把绿椅到美第奇喷泉旁，看孩子放帆船，一坐就是一下午。"},
+  {id:"notredame",open:"在重开的圣母院正中静静坐一场弥撒/静默，不争不抢。"},
+  {id:"mtparnassecem",open:"在萨特与波伏娃合葬墓前站一会儿，看落叶与口红印，无言。"},
+  {id:"seinrives",open:"沿河岸无人的下层步道慢走，看水，不说话，走到哪算哪。"},
+  {id:"hammam",open:"在马赛克蒸汽房里什么都不想，一杯 €2 薄荷茶，功德+10086。"}
+ ], end:"看山即是山——你没有攻略，也不需要，巴黎自己会流进你身体里。"},
+
+/* ===== 低文化 × 高规划 ===== */
+BOSS:{ title:"煤老板：排面拉满的高效巴黎",
+ stops:[
+  {id:"trocadero",open:"算好日出/日落黄金时刻车接车送，五分钟拿下铁塔正面大片，不浪费一分钟。"},
+  {id:"julesverne",open:"私人电梯直达二星午餐，地标+米其林一次解决，排队？不存在的。"},
+  {id:"galeries",open:"VIP personal shopper + 即时退税，顶楼露台酒已备好，采购拍照一站搞定。"},
+  {id:"crazyhorse",open:"提前锁定最优座位，懂行的灯光秀，比人挤人的游客秀更有排面。"},
+  {id:"arctriomphe",open:"预约登顶时段，360 条放射大道与夜景尽收，车在出口等。"},
+  {id:"calife",open:"包舱游船晚餐压轴，私密、体面、全程不用自己操一点心。"}
+ ], end:"攻略满、车好、饭香、床垫软——花钱不是消费，是给快乐打预付款。"},
+
+TIME:{ title:"时间管理大师：一天刷完三天的巴黎",
+ stops:[
+  {id:"trocadero",open:"开门前到位，10 分钟拍完铁塔日出正面，立刻转场。"},
+  {id:"arctriomphe",open:"提前订好登顶时段票，俯瞰十二条大道加快速打卡，绝不排队。"},
+  {id:"champs",open:"沿香街一路扫到方尖碑，伴手礼在旗舰店 30 分钟搞定。"},
+  {id:"enfantsrouges",open:"精准锁定最长队伍的塔吉锅，拼桌速食，15 分钟吃完最火那一摊。"},
+  {id:"galeries",open:"掐准退税柜台空档集中买单，上楼台 5 分钟拍全景九宫格。"},
+  {id:"champmars",open:"卡点 21:00 整点闪灯，拍完立刻地铁去下一场，Bingo～今日清单完成。"}
+ ], end:"上一刻还在老友面基，下一刻九宫格已出炉——你的一天，是别人的三天。"},
+
+FREE:{ title:"多比：有计划地夺回自由",
+ stops:[
+  {id:"chanelspa",open:"把含泳池的半天正式排进行程，这一世你值得被好好对待，已预约。"},
+  {id:"legeorge",open:"提前订好玻璃花院午餐，不被预算束缚，也不临时手忙脚乱。"},
+  {id:"calife",open:"锁定日落游船末班顶层位，自由但不将就，金光塞纳河准时开演。"},
+  {id:"perchoir",open:"订好屋顶位，圣心堂与晚风都在计划里，举杯庆祝自由。"},
+  {id:"galeries",open:"天台免费全景 + 顺手买点喜欢的，自由的小精灵也可以很会安排。"},
+  {id:"vincennes",open:"提前查好划船时刻，到了直接上船喂天鹅，整个下午都是你的。"}
+ ], end:"你醒了，已经是自由的小精灵——预算不再是锁链，而规划让自由更尽兴。"},
+
+WIND:{ title:"追风筝的人：风往哪吹就去哪",
+ stops:[
+  {id:"trocadero",open:"日出前独自到台地，让风吹乱头发，城市在脚下，没人和你抢机位。"},
+  {id:"buttes",open:"地铁直奔这片迷你小瑞士，环湖暴走、过悬桥远眺蒙马特，路线清晰。"},
+  {id:"canal",open:"沿 9 道船闸一路快走，看铁桥旋转，自带水不花钱，风在前头领路。"},
+  {id:"vincennes",open:"全天唯一花销——十几欧划一艘小船钻进天鹅群，划到湖中心发呆。"},
+  {id:"sacrecoeur",open:"缆车到顶，绕开人群站在 130 米台阶边，让全景把自己吹透。"},
+  {id:"galeries",open:"收官登免费天台，用一张零成本全景和巴黎道别，风还在继续。"}
+ ], end:"你不追人群、不卷排面，像一只飞得很远却始终没断线的风筝——千千万万遍。"},
+
+/* ===== 低文化 × 低规划 ===== */
+SHAN:{ title:"慈善家：热闹至上的氛围投资人",
+ stops:[
+  {id:"chartier",open:"不订位直接拼大桌，你请客、你活跃气氛，一顿饭认识半桌陌生人。"},
+  {id:"moulinrouge",open:"羽毛香槟全开的大场面最适合你，来都来了，氛围值直接拉满。"},
+  {id:"bateaux",open:"和全船人一起在甲板欢呼看铁塔闪灯，情绪价值满仓，钱也顺手花了。"},
+  {id:"lappe",open:"跟着最吵的音乐走进酒吧街，端着酒站街，你就是全场气氛组组长。"},
+  {id:"enfantsrouges",open:"在最火的摊前请大家一起吃，拼长桌，热闹比味道重要。"},
+  {id:"perchoir",open:"屋顶请邻座喝一轮，晚风、圣心堂和新朋友，一个都不落下。"}
+ ], end:"善哉善哉——你不计较攻略细节，只要朋友够尽兴、气氛够上头，钱包自动广结善缘。"},
+
+BEE:{ title:"小蜜蜂：哪里有趣往哪飞",
+ stops:[
+  {id:"puces",open:"周末一开市就扎进 2000 个摊位，能量满格地从迷宫这头飞到那头。"},
+  {id:"canal",open:"午间飞到运河岸边，混入年轻人野餐，一杯酒认识一圈朋友。"},
+  {id:"enfantsrouges",open:"在各国小吃摊之间来回采蜜，塔吉锅、便当、可丽饼一个不落。"},
+  {id:"kiliwatch",open:"钻进 600㎡ vintage 仓库，把古着试穿现场 high 成嘉年华。"},
+  {id:"champmars",open:"傍晚飞到战神广场野餐，整点和所有人一起为闪灯欢呼。"},
+  {id:"sacrecoeur",open:"夜里飞上蒙马特台阶，跟着街头歌手一起唱，快乐溢出巴黎。"}
+ ], end:"行程不一定满，快乐一定满——你用多到溢出的能量，把每处都酿成了派对。"},
+
+REST:{ title:"休息者：换个城市认真躺平",
+ stops:[
+  {id:"hammam",open:"不设闹钟，自然醒后先来个 €50 的 hammam 全套，把疲惫交给蒸汽房。"},
+  {id:"luxembourg",open:"拖把绿椅在喷泉边躺到傍晚，看船不看人，零行程零 KPI。"},
+  {id:"angelina",open:"慢悠悠一壶稠热巧配勃朗峰，坐多久都行，不赶任何景点。"},
+  {id:"chanelspa",open:"下午订一场放松按摩，回血这件事，你是专业的。"},
+  {id:"tuileries",open:"在卢浮宫和协和之间的绿躺椅上继续瘫，景点就在旁边，不进也罢。"},
+  {id:"calife",open:"唯一的'安排'是游船晚餐——坐着不动，巴黎自己游过来给你看。"}
+ ], end:"抢不到票该休息，人太多也该休息——你不是来卷的，是来把疲惫交给床垫的。"},
+
+CUTE:{ title:"史莱姆：软萌盲盒式巴黎",
+ stops:[
+  {id:"boulangerie",open:"被香味勾进店，一口巧克力面包，眼睛弯成月牙，先吃再说。"},
+  {id:"luxembourg",open:"看小朋友放迷你帆船，瘫在绿椅上晒太阳，累了就眯一会儿。"},
+  {id:"berthillon",open:"晃到圣路易岛买支冰淇淋，没计划，就是刚好路过。"},
+  {id:"marchefleurs",open:"在绿色花房里东看看西闻闻，软乎乎地被一盆兰花治愈。"},
+  {id:"champmars",open:"铺块布在铁塔脚下野餐，到点跟着大家一起'哇'地看闪灯。"},
+  {id:"collignon",open:"上坡撞见爱美丽的杂货铺，低头找到藏着的小矮人，开心一整天。"}
+ ], end:"饿了就吃、累了就歇、开心就多待会儿——旅行像一盒巧克力，你永远期待下一块。"
+ }
+
+};
+
+</script>
+<style>
+:root{
+  --ink:#2b2620; --paper:#f5efe3; --paper2:#efe7d6; --champ:#c9a45c;
+  --rose:#b06a6f; --seine:#4a6f7a; --muted:#8a8073; --line:#d9cfb8;
+  --shadow:0 18px 50px rgba(43,38,32,.18);
+  --serif:"Songti SC","Noto Serif SC",Georgia,"Times New Roman",serif;
+  --sans:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--sans);color:var(--ink);background:var(--paper);overflow:hidden}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+.serif{font-family:var(--serif)}
+
+#app{position:fixed;inset:0}
+.scene{position:absolute;inset:0;display:flex;flex-direction:column;
+  opacity:0;visibility:hidden;transform:scale(1.015);pointer-events:none;
+  transition:opacity .7s ease,transform .7s ease,visibility 0s .7s}
+.scene.on{opacity:1;visibility:visible;transform:scale(1);pointer-events:auto;transition:opacity .7s ease,transform .7s ease}
+
+#cover{align-items:center;justify-content:center;text-align:center;
+  background:linear-gradient(160deg,#211d18 0%,#3a322a 55%,#4a3f33 100%);color:var(--paper)}
+#cover .kicker{letter-spacing:.5em;font-size:12px;color:var(--champ);margin-bottom:26px;text-transform:uppercase}
+#cover h1{font-family:var(--serif);font-weight:600;font-size:clamp(40px,7vw,86px);line-height:1.08;letter-spacing:.02em}
+#cover h1 .accent{color:var(--champ);font-style:italic}
+#cover .sub{margin-top:22px;font-size:15px;color:#cbbfa9;max-width:560px;line-height:1.9}
+#cover .meta{margin-top:14px;font-size:12px;letter-spacing:.3em;color:#8f8472}
+.btn-primary{margin-top:46px;padding:15px 46px;background:var(--champ);color:#211a10;
+  font-size:15px;letter-spacing:.18em;border-radius:2px;box-shadow:0 10px 30px rgba(201,164,92,.35);
+  transition:transform .25s ease,box-shadow .25s ease}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(201,164,92,.5)}
+.btn-ghost{padding:11px 26px;border:1px solid var(--line);color:var(--ink);border-radius:2px;font-size:13px;letter-spacing:.12em;transition:.25s}
+.btn-ghost:hover{border-color:var(--champ);color:var(--champ)}
+.btn-ghost.dark{border-color:#5a5145;color:#cdc2ae}
+.btn-ghost.dark:hover{border-color:var(--champ);color:var(--champ)}
+
+#quiz{background:var(--paper)}
+.quiz-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:720px;width:100%;margin:0 auto;padding:40px 28px}
+.quiz-top{display:flex;align-items:center;gap:16px;margin-bottom:40px}
+.quiz-dim{font-size:12px;letter-spacing:.2em;color:var(--muted)}
+.progress{flex:1;height:2px;background:var(--line);position:relative;overflow:hidden}
+.progress i{position:absolute;left:0;top:0;bottom:0;background:var(--champ);width:0;transition:width .5s cubic-bezier(.22,1,.36,1)}
+.quiz-count{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.q-num{font-family:var(--serif);font-size:13px;color:var(--champ);letter-spacing:.3em;margin-bottom:14px}
+.q-text{font-family:var(--serif);font-size:clamp(22px,3vw,32px);line-height:1.5;margin-bottom:40px;font-weight:600}
+.opt{display:block;width:100%;text-align:left;padding:20px 24px;margin-bottom:14px;background:#fffdf8;
+  border:1px solid var(--line);border-left:3px solid transparent;border-radius:3px;
+  font-size:16px;line-height:1.6;transition:.25s cubic-bezier(.22,1,.36,1)}
+.opt:hover{border-color:var(--champ);border-left-color:var(--champ);transform:translateX(6px);background:#fff}
+.opt.picked{border-color:var(--champ);border-left-color:var(--champ);background:#faf3e2}
+
+#result{background:linear-gradient(165deg,#26211b,#3d352b);color:var(--paper)}
+.result-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;max-width:760px;margin:0 auto}
+.r-code{font-size:13px;letter-spacing:.6em;color:var(--champ);margin-bottom:18px}
+.r-name{font-family:var(--serif);font-size:clamp(46px,8vw,92px);font-weight:600;line-height:1.1}
+.r-tag{margin-top:18px;font-family:var(--serif);font-style:italic;font-size:clamp(18px,2.4vw,26px);color:#e7d9bd}
+.r-desc{margin-top:26px;font-size:15px;line-height:2;color:#cabfaa;max-width:560px}
+.r-tags{margin-top:24px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.r-chip{font-size:12px;padding:7px 15px;border:1px solid #5a5145;border-radius:30px;color:#cdc2ae;letter-spacing:.08em}
+.r-actions{margin-top:44px;display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.r-dims{margin-top:30px;display:flex;gap:22px;font-size:11px;color:#8f8472;letter-spacing:.1em;flex-wrap:wrap;justify-content:center}
+.r-dims b{color:var(--champ);font-weight:600}
+
+#journey{background:#000}
+#map{position:absolute;inset:0}
+.maplibregl-ctrl-attrib{font-size:9px;opacity:.55}
+.maplibregl-ctrl-bottom-right{margin:0 14px 22px}
+
+.j-top{position:absolute;top:0;left:0;right:0;z-index:5;padding:20px 26px;
+  display:flex;align-items:center;gap:16px;pointer-events:none;
+  background:linear-gradient(180deg,rgba(20,17,13,.72),transparent)}
+.j-persona{display:flex;align-items:center;gap:12px;pointer-events:auto}
+.j-dot{width:10px;height:10px;border-radius:50%;box-shadow:0 0 12px currentColor}
+.j-pname{font-family:var(--serif);color:#f3ead8;font-size:17px}
+.j-pcode{font-size:10px;letter-spacing:.2em;color:var(--champ);margin-top:2px}
+.j-spacer{flex:1}
+.j-actions{display:flex;gap:10px;pointer-events:auto}
+.mini-btn{font-size:12px;color:#e7dcc6;border:1px solid rgba(231,220,198,.3);padding:8px 14px;border-radius:2px;
+  backdrop-filter:blur(6px);background:rgba(20,17,13,.35);transition:.25s;letter-spacing:.08em}
+.mini-btn:hover{border-color:var(--champ);color:var(--champ)}
+
+.stage{position:absolute;left:0;right:0;bottom:0;z-index:5;padding:0 26px 30px;
+  display:flex;justify-content:center;pointer-events:none}
+.card{width:min(640px,92vw);pointer-events:auto;
+  background:linear-gradient(180deg,rgba(34,29,23,.86),rgba(26,22,17,.93));
+  backdrop-filter:blur(14px);border:1px solid rgba(201,164,92,.28);border-radius:6px;
+  padding:26px 30px 24px;box-shadow:var(--shadow);color:#efe7d6;
+  transform:translateY(30px);opacity:0;transition:opacity .8s ease .15s,transform .8s cubic-bezier(.22,1,.36,1) .15s}
+.card.show{transform:translateY(0);opacity:1}
+.card .c-kicker{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.c-idx{font-family:var(--serif);font-size:13px;color:var(--champ);letter-spacing:.2em;font-variant-numeric:tabular-nums}
+.c-cat{font-size:10px;padding:3px 9px;border:1px solid rgba(201,164,92,.4);border-radius:20px;color:#d8c290}
+.c-area{font-size:11px;color:#a99e8a;margin-left:auto}
+.card h2{font-family:var(--serif);font-weight:600;font-size:clamp(23px,3.2vw,32px);line-height:1.25;margin-bottom:4px;color:#f7efe0}
+.card .fr{font-size:12px;font-style:italic;color:#b3a88f;letter-spacing:.04em;margin-bottom:14px}
+.card .hook{font-family:var(--serif);font-size:16px;line-height:1.75;color:#ecd9b0;font-style:italic;
+  border-left:2px solid var(--champ);padding-left:14px;margin-bottom:14px}
+.card .open{font-size:14px;line-height:1.8;color:#d8cfbd;background:rgba(201,164,92,.08);
+  border-radius:4px;padding:11px 14px;margin-bottom:14px}
+.card .open b{color:var(--champ);font-weight:600}
+.card .tip{font-size:12.5px;line-height:1.7;color:#a99e8a;display:flex;gap:8px}
+.card .tip b{color:#c9b78a;flex:none}
+.card-nav{display:flex;align-items:center;gap:14px;margin-top:20px}
+.nav-btn{flex:1;padding:13px;border:1px solid rgba(201,164,92,.4);border-radius:3px;color:#f0e6d2;
+  font-size:14px;letter-spacing:.12em;transition:.25s;background:rgba(201,164,92,.06)}
+.nav-btn:hover:not(:disabled){background:rgba(201,164,92,.2);border-color:var(--champ)}
+.nav-btn:disabled{opacity:.28;cursor:not-allowed}
+.nav-btn.primary{background:var(--champ);color:#241c10;border-color:var(--champ);font-weight:600}
+.nav-btn.primary:hover{background:#d8b56e}
+.dots{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
+.dot{width:7px;height:7px;border-radius:50%;background:rgba(231,220,198,.22);transition:.4s}
+.dot.done{background:var(--champ);box-shadow:0 0 8px rgba(201,164,92,.7)}
+.dot.cur{background:#f3ead8;transform:scale(1.4)}
+
+.intro-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);z-index:6;
+  color:#efe7d6;text-align:center;pointer-events:none;opacity:0;transition:opacity 1s ease}
+.intro-hint.on{opacity:1}
+.intro-hint .big{font-family:var(--serif);font-size:clamp(28px,5vw,54px);line-height:1.3;text-shadow:0 4px 30px rgba(0,0,0,.6)}
+.intro-hint .small{margin-top:16px;font-size:13px;letter-spacing:.3em;color:var(--champ)}
+
+#ending{align-items:center;justify-content:center;text-align:center;
+  background:linear-gradient(165deg,#221d17,#3a3128);color:var(--paper)}
+.end-wrap{padding:44px 30px;max-width:680px}
+.end-kicker{font-size:12px;letter-spacing:.5em;color:var(--champ);margin-bottom:22px}
+.end-title{font-family:var(--serif);font-size:clamp(30px,5vw,52px);line-height:1.3;font-weight:600;margin-bottom:8px}
+.end-line{font-family:var(--serif);font-style:italic;font-size:clamp(17px,2.4vw,22px);color:#e3d2ac;line-height:1.9;margin:26px 0 30px}
+.lit-list{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:36px}
+.lit{font-size:12px;padding:7px 13px;border:1px solid rgba(201,164,92,.4);border-radius:30px;color:#e7d9bd}
+.lit .ck{color:var(--champ);margin-right:6px}
+.end-actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+
+.drawer{position:absolute;top:0;right:0;bottom:0;width:min(380px,90vw);z-index:20;
+  background:rgba(28,24,19,.97);backdrop-filter:blur(16px);border-left:1px solid rgba(201,164,92,.25);
+  transform:translateX(100%);transition:transform .55s cubic-bezier(.22,1,.36,1);overflow-y:auto;padding:26px 22px}
+.drawer.on{transform:translateX(0)}
+.drawer h3{font-family:var(--serif);color:#f0e6d2;font-size:20px;margin-bottom:4px}
+.drawer .dh{font-size:12px;color:#a99e8a;margin-bottom:20px;line-height:1.7}
+.pcard{display:block;width:100%;text-align:left;padding:14px 15px;margin-bottom:9px;border-radius:4px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);transition:.2s}
+.pcard:hover{background:rgba(201,164,92,.12);border-color:rgba(201,164,92,.4)}
+.pcard .pt{display:flex;align-items:center;gap:9px}
+.pcard .pd{width:8px;height:8px;border-radius:50%;flex:none}
+.pcard .pn{font-family:var(--serif);color:#ece2ce;font-size:15px}
+.pcard .pc{margin-left:auto;font-size:10px;letter-spacing:.15em;color:var(--champ)}
+.pcard .pl{font-size:11px;color:#9c917e;margin-top:5px;line-height:1.5}
+.drawer-close{position:absolute;top:18px;right:20px;color:#cbbfa9;font-size:22px;line-height:1}
+.fade{animation:fade .8s ease both}
+@keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (max-width:640px){.card{padding:20px}.j-pname{font-size:15px}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <section class="scene on" id="cover">
+    <div class="fade">
+      <div class="kicker">Lemi · Paris Storylines</div>
+      <h1>十六种人格的<br><span class="accent">巴黎旅行手账</span></h1>
+      <p class="sub">同一座城市，十六种走法。<br>先回答 12 个问题，找到你的旅行人格，巴黎会为你亮起一条只属于你的故事线。</p>
+      <div class="meta">真实地图 · 真实坐标 · 一场可交互的微纪录片</div>
+      <button class="btn-primary" onclick="App.startQuiz()">开始测试</button>
+    </div>
+  </section>
+
+  <section class="scene" id="quiz">
+    <div class="quiz-wrap">
+      <div class="quiz-top">
+        <span class="quiz-dim" id="qDim"></span>
+        <div class="progress"><i id="qBar"></i></div>
+        <span class="quiz-count" id="qCount"></span>
+      </div>
+      <div class="q-num" id="qNum"></div>
+      <div class="q-text" id="qText"></div>
+      <div id="qOpts"></div>
+    </div>
+  </section>
+
+  <section class="scene" id="result">
+    <div class="result-wrap">
+      <div class="r-code" id="rCode"></div>
+      <div class="r-name serif" id="rName"></div>
+      <div class="r-tag" id="rTag"></div>
+      <p class="r-desc" id="rDesc"></p>
+      <div class="r-tags" id="rTags"></div>
+      <div class="r-dims" id="rDims"></div>
+      <div class="r-actions">
+        <button class="btn-primary" onclick="App.enterJourney()">进入我的巴黎故事线 →</button>
+        <button class="btn-ghost dark" onclick="App.retake()">重新测试</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene" id="journey">
+    <div id="map"></div>
+    <div class="intro-hint" id="introHint">
+      <div class="big serif" id="introBig"></div>
+      <div class="small" id="introSmall"></div>
+    </div>
+    <div class="j-top">
+      <div class="j-persona">
+        <span class="j-dot" id="jDot"></span>
+        <div>
+          <div class="j-pname" id="jPname"></div>
+          <div class="j-pcode" id="jPcode"></div>
+        </div>
+      </div>
+      <div class="j-spacer"></div>
+      <div class="j-actions">
+        <button class="mini-btn" onclick="App.toggleDrawer()">16 条故事线</button>
+        <button class="mini-btn" onclick="App.retake()">重测</button>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="dots" id="dots"></div>
+        <div class="c-kicker">
+          <span class="c-idx" id="cIdx"></span>
+          <span class="c-cat" id="cCat"></span>
+          <span class="c-area" id="cArea"></span>
+        </div>
+        <h2 id="cName"></h2>
+        <div class="fr" id="cFr"></div>
+        <div class="hook" id="cHook"></div>
+        <div class="open"><b>你的打开方式 · </b><span id="cOpen"></span></div>
+        <div class="tip"><b>Tips</b><span id="cTip"></span></div>
+        <div class="card-nav">
+          <button class="nav-btn" id="prevBtn" onclick="App.prev()">← 上一站</button>
+          <button class="nav-btn primary" id="nextBtn" onclick="App.next()">下一站</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="scene" id="ending">
+    <div class="end-wrap">
+      <div class="end-kicker">FIN · 我的巴黎手账</div>
+      <div class="end-title serif" id="endTitle"></div>
+      <div class="end-line serif" id="endLine"></div>
+      <div class="lit-list" id="litList"></div>
+      <div class="end-actions">
+        <button class="btn-primary" onclick="App.replay()">重走这条线</button>
+        <button class="btn-ghost dark" onclick="App.openDrawer()">换一条人格线</button>
+        <button class="btn-ghost dark" onclick="App.retake()">重新测试</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="drawer" id="drawer">
+    <button class="drawer-close" onclick="App.closeDrawer()">×</button>
+    <h3>16 条故事线</h3>
+    <div class="dh">核心地标相同，走法截然不同。<br>点任意一张，用另一种人格重游巴黎。</div>
+    <div id="drawerList"></div>
+  </aside>
+
+</div>
+
+<script>
+const Q=[
+ {dim:"culture",q:"哪种旅行地最容易让你一秒心动？",o:[["厚重的历史底蕴，藏着好多故事",2],["有烟火气的城市，边吃边逛最快乐",1],["绝美山海，沉醉于自然风光",0]]},
+ {dim:"culture",q:"到了一个景点，你的打开方式？",o:[["做足功课，历史、名人、典故都想知道",2],["先找最佳机位，来一趟必出片",1],["随便走走，看到有意思的介绍就多停会儿",0]]},
+ {dim:"culture",q:"旅行结束，你最爱的“战利品”？",o:[["有地方故事的工艺品或书画，越有来历越喜欢",2],["特产或免税好物，拿在手里最安心",1],["满相册的美照、明信片、冰箱贴",0]]},
+ {dim:"social",q:"如果只能选一种旅行方式，你会？",o:[["一群人热热闹闹，认识新朋友超快乐",2],["和几个熟悉的朋友一起，舒服又有安全感",1],["一个人出发，轻松又自在",0]]},
+ {dim:"social",q:"吃饭时听到邻桌在聊当地玩法，你会？",o:[["直接凑过去搭话：“姐妹求推荐！”",2],["悄悄听两句，默默记在心里",1],["专心干饭，左耳进右耳出",0]]},
+ {dim:"social",q:"旅行中迷路了，你第一反应？",o:[["立刻抓个本地人问路，顺便唠唠嗑",2],["先自己找找，实在不行再问工作人员",1],["靠自己解决，不太想麻烦别人",0]]},
+ {dim:"planning",q:"出发前一周，你的状态？",o:[["精确到分钟的攻略，万事俱备",2],["大概记下几个想去的地方，其他全凭心情",1],["到了再说，灵感会带路",0]]},
+ {dim:"planning",q:"如果当天突然下雨打乱计划，你会？",o:[["马上切换备选方案，确保行程不跑偏",2],["问题不大，灵活调整成室内游",1],["换个玩法也有意思，反而像开了隐藏支线",0]]},
+ {dim:"planning",q:"你最舒服的旅行节奏是？",o:[["安排得明明白白，心里才踏实",2],["打卡必去点，都不白来",1],["走到哪算哪，当下开心最重要",0]]},
+ {dim:"spending",q:"你的旅行花销大头在？",o:[["住宿和体验，舒服才是硬道理",2],["很平均，该省省该花花",1],["交通！用最少的钱去最多的地方",0]]},
+ {dim:"spending",q:"热门景点要排 1 小时，你会？",o:[["果断加！时间比这点钱宝贵多了",2],["看情况，太晒太累就加钱",1],["硬排，能省则省",0]]},
+ {dim:"spending",q:"当地超火的游客体验项目，你？",o:[["来都来了！必须安排，不留遗憾",2],["价格合适会想试试看",1],["找平替或直接跳过，没必要花这钱",0]]}
+];
+const DIMNAME={culture:"文化",planning:"规划",social:"社交",spending:"消费"};
+
+const App={
+ score:{culture:0,planning:0,social:0,spending:0},
+ qi:0, persona:null, route:null, si:0, map:null, markers:[], lit:new Set(),
+
+ show(id){document.querySelectorAll('.scene').forEach(s=>s.classList.remove('on'));
+   document.getElementById(id).classList.add('on');},
+ startQuiz(){this.score={culture:0,planning:0,social:0,spending:0};this.qi=0;this.show('quiz');this.renderQ();},
+ renderQ(){
+   const item=Q[this.qi];
+   document.getElementById('qDim').textContent=DIMNAME[item.dim]+" 维度";
+   document.getElementById('qCount').textContent=(this.qi+1)+" / 12";
+   document.getElementById('qBar').style.width=(this.qi/12*100)+"%";
+   document.getElementById('qNum').textContent="QUESTION "+String(this.qi+1).padStart(2,'0');
+   document.getElementById('qText').textContent=item.q;
+   const box=document.getElementById('qOpts');box.innerHTML="";
+   item.o.forEach(([txt,pts])=>{
+     const b=document.createElement('button');b.className='opt';b.textContent=txt;
+     b.onclick=()=>this.answer(pts,b);box.appendChild(b);
+   });
+ },
+ answer(pts,el){
+   el.classList.add('picked');
+   this.score[Q[this.qi].dim]+=pts;
+   setTimeout(()=>{this.qi++; if(this.qi<Q.length)this.renderQ(); else this.compute();},320);
+ },
+ hi(v){return v>=4;},
+ compute(){
+   const s=this.score;
+   const C=this.hi(s.culture),P=this.hi(s.planning),S=this.hi(s.social),M=this.hi(s.spending);
+   const M4={
+    "1111":"GOAT","1110":"CTRL","1101":"BLUE","1100":"NERD",
+    "1011":"DODO","1010":"MYTH","1001":"LORD","1000":"BUDD",
+    "0111":"BOSS","0110":"TIME","0101":"FREE","0100":"WIND",
+    "0011":"SHAN","0010":"BEE","0001":"REST","0000":"CUTE"
+   };
+   const code=M4[`${C?1:0}${P?1:0}${S?1:0}${M?1:0}`];
+   this.persona=PARIS.personas.find(p=>p.code===code);
+   this.route=ROUTES[code];
+   document.getElementById('qBar').style.width="100%";
+   this.renderResult();
+ },
+ renderResult(){
+   const p=this.persona;
+   document.getElementById('rCode').textContent=p.code;
+   document.getElementById('rName').textContent=p.name;
+   document.getElementById('rTag').textContent="“"+p.tagline+"”";
+   document.getElementById('rDesc').textContent=p.desc;
+   document.getElementById('rTags').innerHTML=
+     `<span class="r-chip">${p.vibe}</span><span class="r-chip">${p.pace}</span><span class="r-chip">预算 ${p.budget}</span>`;
+   const s=this.score;
+   document.getElementById('rDims').innerHTML=
+     ["culture","planning","social","spending"].map(d=>
+       `${DIMNAME[d]}·${this.hi(s[d])?"高":"低"}`).join("　·　");
+   this.show('result');
+ },
+ retake(){this.closeDrawer();this.startQuiz();},
+
+ enterJourney(){
+   this.show('journey');this.si=0;this.lit=new Set();
+   document.getElementById('jDot').style.color=this.persona.color;
+   document.getElementById('jPname').textContent=this.persona.name+"的线路";
+   document.getElementById('jPcode').textContent=this.persona.code+" · "+this.route.title;
+   if(!this.map) this.initMap(); else this.clearRoute();
+   this.drawRoute(()=>this.playIntro());
+ },
+ initMap(){
+   this.map=new maplibregl.Map({container:'map',
+     style:'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+     center:[2.34,48.862],zoom:12.4,pitch:46,bearing:-8});
+   this.map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
+   this.map.scrollZoom.setWheelZoomRate(1/600);
+ },
+ clearRoute(){this.markers.forEach(m=>m.remove());this.markers=[];
+   ['route-l','route-g'].forEach(l=>{if(this.map.getLayer(l))this.map.removeLayer(l);});
+   ['route','ghost'].forEach(src=>{if(this.map.getSource(src))this.map.removeSource(src);});
+ },
+ drawRoute(cb){
+   const coords=this.route.stops.map(st=>PARIS.pois[st.id].c);
+   const add=()=>{
+     this.clearRoute();
+     this.map.addSource('ghost',{type:'geojson',data:{type:'Feature',
+       geometry:{type:'LineString',coordinates},properties:{}}});
+     this.map.addLayer({id:'route-g',type:'line',source:'ghost',
+       paint:{'line-color':'#c9a45c','line-width':2,'line-opacity':.22,'line-dasharray':[2,2]}});
+     this.map.addSource('route',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+     this.map.addLayer({id:'route-l',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},
+       paint:{'line-color':'#c9a45c','line-width':3.5,'line-opacity':.95,'line-blur':.4}});
+     this.route.stops.forEach((st,i)=>{
+       const poi=PARIS.pois[st.id];
+       const el=document.createElement('div');
+       el.style.cssText=`width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+         font-family:Georgia;font-size:13px;font-weight:700;color:#2a2113;
+         background:rgba(245,239,227,.92);border:2px solid ${this.persona.color};
+         box-shadow:0 3px 12px rgba(0,0,0,.4);cursor:pointer;transition:transform .3s,background .3s,color .3s`;
+       el.textContent=i+1;
+       const mk=new maplibregl.Marker({element:el}).setLngLat(poi.c).addTo(this.map);
+       el.addEventListener('click',()=>App.goTo(i));
+       this.markers.push(mk);
+     });
+     cb&&cb();
+   };
+   if(this.map.loaded())add();else this.map.once('load',add);
+ },
+ playIntro(){
+   const h=document.getElementById('introHint');
+   document.getElementById('introBig').textContent=this.persona.name+" · 出发";
+   document.getElementById('introSmall').textContent=this.route.title;
+   h.classList.add('on');
+   this.map.flyTo({center:[2.34,48.862],zoom:11.8,pitch:42,bearing:0,duration:2600,essential:true});
+   setTimeout(()=>{h.classList.remove('on');this.goTo(0);},3000);
+ },
+ goTo(i){
+   this.si=i;const st=this.route.stops[i],poi=PARIS.pois[st.id];
+   const seg=this.route.stops.slice(0,i+1).map(x=>PARIS.pois[x.id].c);
+   this.map.getSource('route').setData({type:'Feature',
+     geometry:{type:'LineString',coordinates:seg},properties:{}});
+   const here=this.map.getCenter();
+   const d=Math.hypot(here.lng-poi.c[0],here.lat-poi.c[1]);
+   this.map.flyTo({center:[poi.c[0]-0.006,poi.c[1]-0.004],zoom:13.4,pitch:48,bearing:-6,
+     speed: d>0.03?0.7:0.0001,curve:1.5,essential:true});
+   this.markers.forEach((m,k)=>{const e=m.getElement();
+     e.style.transform=(k===i)?'scale(1.35)':'scale(1)';
+     if(k<=i){e.style.background=this.persona.color;e.style.color='#fff';}
+     else{e.style.background='rgba(245,239,227,.92)';e.style.color='#2a2113';}});
+   this.renderCard();
+ },
+ renderCard(){
+   const i=this.si,st=this.route.stops[i],poi=PARIS.pois[st.id],n=this.route.stops.length;
+   const card=document.getElementById('card');
+   card.classList.remove('show');void card.offsetWidth;card.classList.add('show');
+   document.getElementById('cIdx').textContent="STATION "+String(i+1).padStart(2,'0')+" / "+String(n).padStart(2,'0');
+   document.getElementById('cCat').textContent=poi.cat;
+   document.getElementById('cArea').textContent=poi.area;
+   document.getElementById('cName').textContent=poi.n;
+   document.getElementById('cFr').textContent=poi.fr;
+   document.getElementById('cHook').textContent="「 "+poi.hook+" 」";
+   document.getElementById('cOpen').textContent=st.open;
+   document.getElementById('cTip').textContent=poi.tip;
+   document.getElementById('prevBtn').disabled=(i===0);
+   document.getElementById('nextBtn').textContent=(i===n-1)?'点亮全图，合上这一页 →':'下一站 →';
+   document.getElementById('dots').innerHTML=this.route.stops.map((_,k)=>
+     `<span class="dot ${k<i?'done':''} ${k===i?'cur':''}"></span>`).join('');
+ },
+ next(){
+   this.lit.add(this.route.stops[this.si].id);
+   if(this.si<this.route.stops.length-1){this.goTo(this.si+1);}else{this.finish();}
+ },
+ prev(){if(this.si>0)this.goTo(this.si-1);},
+ finish(){
+   this.route.stops.forEach(s=>this.lit.add(s.id));
+   document.getElementById('endTitle').textContent=this.persona.name+"，这是你的巴黎";
+   document.getElementById('endLine').textContent=this.route.end;
+   document.getElementById('litList').innerHTML=this.route.stops.map(s=>
+     `<span class="lit"><span class="ck">✦</span>${PARIS.pois[s.id].n}</span>`).join('');
+   this.closeDrawer();this.show('ending');
+ },
+ replay(){this.enterJourney();},
+
+ openDrawer(){document.getElementById('drawer').classList.add('on');this.drawerOpen=true;if(!this.drawerB){this.buildDrawer();this.drawerB=1;}},
+ closeDrawer(){document.getElementById('drawer').classList.remove('on');this.drawerOpen=false;},
+ toggleDrawer(){this.drawerOpen?this.closeDrawer():this.openDrawer();},
+ buildDrawer(){
+   const list=document.getElementById('drawerList');list.innerHTML="";
+   PARIS.personas.filter(p=>!p.hidden).forEach(p=>{
+     const r=ROUTES[p.code];const b=document.createElement('button');b.className='pcard';
+     b.innerHTML=`<div class="pt"><span class="pd" style="background:${p.color}"></span>
+       <span class="pn">${p.name}</span><span class="pc">${p.code}</span></div>
+       <div class="pl">${r.title}</div>`;
+     b.onclick=()=>{this.persona=p;this.route=ROUTES[p.code];this.closeDrawer();
+       document.getElementById('jDot').style.color=p.color;
+       document.getElementById('jPname').textContent=p.name+"的线路";
+       document.getElementById('jPcode').textContent=p.code+" · "+r.title;
+       this.clearRoute();this.drawRoute(()=>this.playIntro());};
+     list.appendChild(b);
+   });
+ }
+};
+</script>
+</body>
+</html>
