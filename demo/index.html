@@ -4,8 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lemi 巴黎 · 16 种人格的旅行手账</title>
-<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
-<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 <script src="paris-data.js"></script>
 <script src="paris-routes.js"></script>
 <style>
@@ -343,13 +341,39 @@ const App={
    document.getElementById('jDot').style.color=this.persona.color;
    document.getElementById('jPname').textContent=this.persona.name+"的线路";
    document.getElementById('jPcode').textContent=this.persona.code+" · "+this.route.title;
-   if(!this.map) this.initMap(); else this.clearRoute();
-   this.drawRoute(()=>this.playIntro());
+   this.showMapHint("地图加载中…");
+   this.mapReady=false;
+   this.renderCard();          // 卡片/故事先行，地图为增强层
+   this.loadMaplibre().then(()=>{
+     if(!this.map){this.initMap();this.map.once('load',()=>{this.mapReady=true;this.drawRoute();this.playIntro();});}
+     else{this.clearRoute();this.drawRoute();this.playIntro();}
+   }).catch(()=>{this.mapReady=false;this.showMapHint("地图资源加载受限，故事照读 ↓");this.cardIntro();});
+ },
+ cardIntro(){const h=document.getElementById('introHint');
+   document.getElementById('introBig').textContent=this.persona.name+" · 出发";
+   document.getElementById('introSmall').textContent=this.route.title;
+   h.classList.add('on');setTimeout(()=>h.classList.remove('on'),2600);},
+ showMapHint(t){const h=document.getElementById('introHint');
+   document.getElementById('introBig').textContent=t;
+   document.getElementById('introSmall').textContent="";
+   h.classList.add('on');clearTimeout(this._hintT);
+   this._hintT=setTimeout(()=>{if(t.indexOf("加载中")<0)h.classList.remove('on');},2600);},
+ loadMaplibre(){
+   if(window.maplibregl)return Promise.resolve();
+   return new Promise((res,rej)=>{
+     const css=document.createElement('link');css.rel='stylesheet';
+     css.href='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css';
+     document.head.appendChild(css);
+     const s=document.createElement('script');
+     s.src='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js';
+     s.onload=()=>res();s.onerror=()=>rej();document.head.appendChild(s);
+   });
  },
  initMap(){
    this.map=new maplibregl.Map({container:'map',
      style:'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
-     center:[2.34,48.862],zoom:12.4,pitch:46,bearing:-8});
+     center:[2.34,48.862],zoom:12.4,pitch:46,bearing:-8,
+     attributionControl:true,fadeDuration:0});
    this.map.addControl(new maplibregl.NavigationControl({showCompass:false}),'bottom-right');
    this.map.scrollZoom.setWheelZoomRate(1/600);
  },
@@ -357,34 +381,33 @@ const App={
    ['route-l','route-g'].forEach(l=>{if(this.map.getLayer(l))this.map.removeLayer(l);});
    ['route','ghost'].forEach(src=>{if(this.map.getSource(src))this.map.removeSource(src);});
  },
- drawRoute(cb){
+ drawRoute(){
+   if(!this.mapReady||!this.map)return;
    const coords=this.route.stops.map(st=>PARIS.pois[st.id].c);
-   const add=()=>{
-     this.clearRoute();
-     this.map.addSource('ghost',{type:'geojson',data:{type:'Feature',
-       geometry:{type:'LineString',coordinates},properties:{}}});
-     this.map.addLayer({id:'route-g',type:'line',source:'ghost',
-       paint:{'line-color':'#c9a45c','line-width':2,'line-opacity':.22,'line-dasharray':[2,2]}});
-     this.map.addSource('route',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-     this.map.addLayer({id:'route-l',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},
-       paint:{'line-color':'#c9a45c','line-width':3.5,'line-opacity':.95,'line-blur':.4}});
-     this.route.stops.forEach((st,i)=>{
-       const poi=PARIS.pois[st.id];
-       const el=document.createElement('div');
-       el.style.cssText=`width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-         font-family:Georgia;font-size:13px;font-weight:700;color:#2a2113;
-         background:rgba(245,239,227,.92);border:2px solid ${this.persona.color};
-         box-shadow:0 3px 12px rgba(0,0,0,.4);cursor:pointer;transition:transform .3s,background .3s,color .3s`;
-       el.textContent=i+1;
-       const mk=new maplibregl.Marker({element:el}).setLngLat(poi.c).addTo(this.map);
-       el.addEventListener('click',()=>App.goTo(i));
-       this.markers.push(mk);
-     });
-     cb&&cb();
-   };
-   if(this.map.loaded())add();else this.map.once('load',add);
+   this.clearRoute();
+   this.map.addSource('ghost',{type:'geojson',data:{type:'Feature',
+     geometry:{type:'LineString',coordinates},properties:{}}});
+   this.map.addLayer({id:'route-g',type:'line',source:'ghost',
+     paint:{'line-color':'#c9a45c','line-width':2,'line-opacity':.22,'line-dasharray':[2,2]}});
+   this.map.addSource('route',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+   this.map.addLayer({id:'route-l',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},
+     paint:{'line-color':'#c9a45c','line-width':3.5,'line-opacity':.95,'line-blur':.4}});
+   this.route.stops.forEach((st,i)=>{
+     const poi=PARIS.pois[st.id];
+     const el=document.createElement('div');
+     el.style.cssText=`width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+       font-family:Georgia;font-size:13px;font-weight:700;color:#2a2113;
+       background:rgba(245,239,227,.92);border:2px solid ${this.persona.color};
+       box-shadow:0 3px 12px rgba(0,0,0,.4);cursor:pointer;transition:transform .3s,background .3s,color .3s`;
+     el.textContent=i+1;
+     const mk=new maplibregl.Marker({element:el}).setLngLat(poi.c).addTo(this.map);
+     el.addEventListener('click',()=>App.goTo(i));
+     this.markers.push(mk);
+   });
+   this.syncMap();
  },
  playIntro(){
+   if(!this.mapReady){this.cardIntro();return;}
    const h=document.getElementById('introHint');
    document.getElementById('introBig').textContent=this.persona.name+" · 出发";
    document.getElementById('introSmall').textContent=this.route.title;
@@ -394,19 +417,22 @@ const App={
  },
  goTo(i){
    this.si=i;const st=this.route.stops[i],poi=PARIS.pois[st.id];
-   const seg=this.route.stops.slice(0,i+1).map(x=>PARIS.pois[x.id].c);
-   this.map.getSource('route').setData({type:'Feature',
-     geometry:{type:'LineString',coordinates:seg},properties:{}});
-   const here=this.map.getCenter();
-   const d=Math.hypot(here.lng-poi.c[0],here.lat-poi.c[1]);
-   this.map.flyTo({center:[poi.c[0]-0.006,poi.c[1]-0.004],zoom:13.4,pitch:48,bearing:-6,
-     speed: d>0.03?0.7:0.0001,curve:1.5,essential:true});
+   if(this.mapReady&&this.map.getSource('route')){
+     const seg=this.route.stops.slice(0,i+1).map(x=>PARIS.pois[x.id].c);
+     this.map.getSource('route').setData({type:'Feature',
+       geometry:{type:'LineString',coordinates:seg},properties:{}});
+     const here=this.map.getCenter();
+     const d=Math.hypot(here.lng-poi.c[0],here.lat-poi.c[1]);
+     this.map.flyTo({center:[poi.c[0]-0.006,poi.c[1]-0.004],zoom:13.4,pitch:48,bearing:-6,
+       speed: d>0.03?0.7:0.0001,curve:1.5,essential:true});
+   }
    this.markers.forEach((m,k)=>{const e=m.getElement();
      e.style.transform=(k===i)?'scale(1.35)':'scale(1)';
      if(k<=i){e.style.background=this.persona.color;e.style.color='#fff';}
      else{e.style.background='rgba(245,239,227,.92)';e.style.color='#2a2113';}});
    this.renderCard();
  },
+ syncMap(){ if(this.mapReady)this.goTo(this.si); },
  renderCard(){
    const i=this.si,st=this.route.stops[i],poi=PARIS.pois[st.id],n=this.route.stops.length;
    const card=document.getElementById('card');
@@ -453,7 +479,9 @@ const App={
        document.getElementById('jDot').style.color=p.color;
        document.getElementById('jPname').textContent=p.name+"的线路";
        document.getElementById('jPcode').textContent=p.code+" · "+r.title;
-       this.clearRoute();this.drawRoute(()=>this.playIntro());};
+       this.si=0;this.lit=new Set();this.renderCard();
+       if(this.mapReady){this.clearRoute();this.drawRoute();this.playIntro();}
+       else this.cardIntro();};
      list.appendChild(b);
    });
  }
