@@ -612,6 +612,7 @@ const DIMNAME={culture:"文化",planning:"规划",social:"社交",spending:"消�
 const App={
  score:{culture:0,planning:0,social:0,spending:0},
  qi:0, persona:null, route:null, si:0, map:null, markers:[], lit:new Set(),
+ _mapTok:0,_mapP:null,_libP:null,   // 地图异步初始化去重：令牌与缓存 Promise 必须显式初始化
 
  show(id){document.querySelectorAll('.scene').forEach(s=>s.classList.remove('on'));
    document.getElementById(id).classList.add('on');},
@@ -668,7 +669,7 @@ const App={
        `${DIMNAME[d]}·${this.hi(s[d])?"高":"低"}`).join("　·　");
    this.show('result');
  },
- retake(){this.closeDrawer();this.startQuiz();},
+ retake(){this._mapTok++;this.closeDrawer();this.startQuiz();},  // 离开故事页：令牌 +1 使在途地图回调失效
 
  enterJourney(){
    this.show('journey');this.si=0;this.lit=new Set();
@@ -676,18 +677,20 @@ const App={
    document.getElementById('jPname').textContent=this.persona.name+"的线路";
    document.getElementById('jPcode').textContent=this.persona.code+" · "+this.route.title;
    this.renderCard();          // 卡片/故事先行，地图为增强层
-   if(this.map){
-     // 重走/重测再进入：地图实例已在，样式就绪则直接重绘，不再回到 loading 态
-     const ready=()=>{this.mapReady=true;this.clearRoute();this.drawRoute();this.playIntro();};
-     if(this.map.loaded&&this.map.loaded()&&(!this.map.isStyleLoaded||this.map.isStyleLoaded()))ready();
-     else{this.mapReady=false;this.showMapHint("地图加载中…");this.map.once('load',ready);}
-   }else{
-     this.mapReady=false;
-     this.showMapHint("地图加载中…");
-     this.loadMaplibre().then(()=>{
-       this.initMap();this.map.once('load',()=>{this.mapReady=true;this.drawRoute();this.playIntro();});
-     }).catch(()=>{this.mapReady=false;this.showMapHint("地图资源加载受限，故事照读 ↓");this.cardIntro();});
-   }
+   // 统一在入口递增并捕获令牌；无论实例已存在还是待初始化，都只通过同一个 ensureMap() 等待，
+   // 并在唯一激活入口校验令牌——慢网多次重入也只有最后一次进入会清图重绘/playIntro
+   const tok=++this._mapTok;
+   const styled=this.map&&this.map.loaded&&this.map.loaded()&&(!this.map.isStyleLoaded||this.map.isStyleLoaded());
+   this.mapReady=false;
+   if(!styled)this.showMapHint("地图加载中…");
+   this.ensureMap().then(()=>{
+     if(tok!==this._mapTok)return;
+     this.mapReady=true;this.clearRoute();this.drawRoute();this.playIntro();
+   }).catch(()=>{
+     this._mapP=null;
+     if(tok!==this._mapTok)return;
+     this.mapReady=false;this.showMapHint("地图资源加载受限，故事照读 ↓");this.cardIntro();
+   });
  },
  cardIntro(){const h=document.getElementById('introHint');
    document.getElementById('introBig').textContent=this.persona.name+" · 出发";
@@ -700,14 +703,44 @@ const App={
    this._hintT=setTimeout(()=>{if(t.indexOf("加载中")<0)h.classList.remove('on');},2600);},
  loadMaplibre(){
    if(window.maplibregl)return Promise.resolve();
-   return new Promise((res,rej)=>{
+   if(this._libP)return this._libP;   // 脚本已在注入，复用同一 Promise，不重复插 <script>
+   return this._libP=new Promise((res,rej)=>{
      const css=document.createElement('link');css.rel='stylesheet';
      css.href='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css';
      document.head.appendChild(css);
      const s=document.createElement('script');
      s.src='https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js';
-     s.onload=()=>res();s.onerror=()=>rej();document.head.appendChild(s);
+     s.onload=()=>res();s.onerror=()=>{this._libP=null;rej();};document.head.appendChild(s);
    });
+ },
+ ensureMap(){
+   // 唯一的「加载脚本 + 初始化实例 + 等样式就绪」Promise：
+   // 重入（含实例已建但 load 未触发的窗口）只等待同一 Promise，不在各入口重复注册 once('load')
+   const isReady=()=>this.map&&this.map.loaded&&this.map.loaded()
+     &&(!this.map.isStyleLoaded||this.map.isStyleLoaded());
+   if(isReady())return Promise.resolve(this.map);
+   if(this._mapP)return this._mapP;
+   // 等样式就绪：同时挂 load / 首次 error / 超时，任一落定即解绑另两侧并 resolve 或 reject，
+   // 避免样式 URL 失败或 load 永不触发时 Promise 永久 pending 导致降级分支不执行
+   const waitReady=()=>new Promise((res,rej)=>{
+     if(isReady())return res(this.map);
+     const m=this.map;let done=false;
+     let timer=setTimeout(()=>onError(new Error('map-style-load-timeout')),20000);
+     const cleanup=()=>{clearTimeout(timer);m.off('load',onLoad);m.off('error',onError);};
+     const onLoad=()=>{if(done)return;done=true;cleanup();res(this.map);};
+     const onError=(e)=>{if(done)return;done=true;cleanup();rej(e||new Error('map-style-error'));};
+     m.on('load',onLoad);
+     m.on('error',onError);
+   });
+   return this._mapP=(this.map
+       ?Promise.resolve()                                   // 实例已在：只等样式，不重载脚本/不重建
+       :this.loadMaplibre().then(()=>{if(!this.map)this.initMap();}))  // 回调内二次检查，只建一次
+     .then(waitReady)
+     .catch((e)=>{
+       this._mapP=null;
+       if(this.map){try{this.map.remove();}catch(_){}this.map=null;}  // 销毁坏实例，后续进入可重新创建
+       throw e;
+     });
  },
  initMap(){
    this.map=new maplibregl.Map({container:'map',
