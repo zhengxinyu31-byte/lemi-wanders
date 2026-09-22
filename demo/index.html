@@ -479,7 +479,8 @@ const App={
        document.getElementById('jDot').style.color=p.color;
        document.getElementById('jPname').textContent=p.name+"的线路";
        document.getElementById('jPcode').textContent=p.code+" · "+r.title;
-       this.si=0;this.lit=new Set();this.renderCard();
+       this.si=0;this.lit=new Set();
+       this.show('journey');this.renderCard();
        if(this.mapReady){this.clearRoute();this.drawRoute();this.playIntro();}
        else this.cardIntro();};
      list.appendChild(b);
