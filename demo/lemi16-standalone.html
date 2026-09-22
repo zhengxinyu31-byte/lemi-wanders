@@ -171,17 +171,17 @@ var ROUTES = {
 /* ===== 高文化 × 高规划 ===== */
 GOAT:{ title:"管家的丝滑巴黎：顶流、名店与全队",
  stops:[
-  {id:"louvre",open:"提前订好开门时段票，带队直冲三宝，把每幅画讲成脱口秀——时间卡到分钟。"},
-  {id:"palaisgarnier",open:"订好包厢或讲解位，把《歌剧魅影》的吊灯悬案当故事讲给全队听。"},
-  {id:"lecinq",open:"提前两个月订好的晚餐，水晶灯鲜花走廊，你只负责优雅带人入座。"},
-  {id:"arctriomphe",open:"日落票登顶，18:30 准时看长明火重燃，全队零等待。"},
-  {id:"moulinrouge",open:"周末深夜场 VIP 座+香槟早已订好，散场直接安排车，没人需要找路。"},
-  {id:"galeries",open:"退税柜台和 concierge 都打好招呼，买完上楼台一杯酒看铁塔点灯收尾。"}
+  {id:"louvre",open:"上午提前订好开门时段票，带队直冲三宝，把每幅画讲成脱口秀——时间卡到分钟。"},
+  {id:"palaisgarnier",open:"午后订好包厢或讲解位，把《歌剧魅影》的吊灯悬案当故事讲给全队听。"},
+  {id:"galeries",open:"傍晚先扫货，退税柜台和 concierge 都打好招呼，闭台前上楼台一杯酒看全城点灯。"},
+  {id:"arctriomphe",open:"18:30 准时登顶看长明火重燃，日落票和通道早就备好，全队零等待。"},
+  {id:"lecinq",open:"19:00 后入座提前两个月订好的晚餐，水晶灯鲜花走廊，你只负责优雅带队。"},
+  {id:"moulinrouge",open:"晚餐后转场周末深夜场，VIP 座+香槟早已订好，散场直接安排车，没人需要找路。"}
  ], end:"和你出门，大家连迷路的机会都没有——巴黎最顶的排场，被你安排得像点外卖。"},
 
 CTRL:{ title:"宝藏团长的高性价比文艺队",
  stops:[
-  {id:"louvre",open:"每月第一个周日免费夜场（需预约）带队冲，省下的门票钱够全队吃一顿。"},
+  {id:"louvre",open:"每月第一个周五夜场免费（以官网当年公告为准）带队冲，省下的门票钱够全队吃一顿。"},
   {id:"orsay",open:"周四晚人最少票价更优，把印象派讲得头头是道，值回每一分钱。"},
   {id:"chartier",open:"21:30 后带队来不用排，纸桌布账单人均 20 欧，社牛你负责拼桌破冰。"},
   {id:"pucesvanves",open:"周末 7 点杀到跳蚤市场，你砍价问路样样行，帮全队淘到宝。"},
@@ -615,7 +615,7 @@ const App={
 
  show(id){document.querySelectorAll('.scene').forEach(s=>s.classList.remove('on'));
    document.getElementById(id).classList.add('on');},
- startQuiz(){this.score={culture:0,planning:0,social:0,spending:0};this.qi=0;this.show('quiz');this.renderQ();},
+ startQuiz(){this.score={culture:0,planning:0,social:0,spending:0};this.qi=0;this.answering=false;this.show('quiz');this.renderQ();},
  renderQ(){
    const item=Q[this.qi];
    document.getElementById('qDim').textContent=DIMNAME[item.dim]+" 维度";
@@ -630,9 +630,13 @@ const App={
    });
  },
  answer(pts,el){
+   if(this.answering)return;              // 320ms 过渡内锁定，防止双击重复计分/跳题
+   this.answering=true;
+   const dim=Q[this.qi].dim;              // 固定捕获当前题维度，避免异步期间 qi 变化
    el.classList.add('picked');
-   this.score[Q[this.qi].dim]+=pts;
-   setTimeout(()=>{this.qi++; if(this.qi<Q.length)this.renderQ(); else this.compute();},320);
+   this.score[dim]+=pts;
+   document.querySelectorAll('#qOpts .opt').forEach(b=>b.disabled=true);
+   setTimeout(()=>{this.answering=false;this.qi++; if(this.qi<Q.length)this.renderQ(); else this.compute();},320);
  },
  hi(v){return v>=4;},
  compute(){
@@ -671,13 +675,19 @@ const App={
    document.getElementById('jDot').style.color=this.persona.color;
    document.getElementById('jPname').textContent=this.persona.name+"的线路";
    document.getElementById('jPcode').textContent=this.persona.code+" · "+this.route.title;
-   this.showMapHint("地图加载中…");
-   this.mapReady=false;
    this.renderCard();          // 卡片/故事先行，地图为增强层
-   this.loadMaplibre().then(()=>{
-     if(!this.map){this.initMap();this.map.once('load',()=>{this.mapReady=true;this.drawRoute();this.playIntro();});}
-     else{this.clearRoute();this.drawRoute();this.playIntro();}
-   }).catch(()=>{this.mapReady=false;this.showMapHint("地图资源加载受限，故事照读 ↓");this.cardIntro();});
+   if(this.map){
+     // 重走/重测再进入：地图实例已在，样式就绪则直接重绘，不再回到 loading 态
+     const ready=()=>{this.mapReady=true;this.clearRoute();this.drawRoute();this.playIntro();};
+     if(this.map.loaded&&this.map.loaded()&&(!this.map.isStyleLoaded||this.map.isStyleLoaded()))ready();
+     else{this.mapReady=false;this.showMapHint("地图加载中…");this.map.once('load',ready);}
+   }else{
+     this.mapReady=false;
+     this.showMapHint("地图加载中…");
+     this.loadMaplibre().then(()=>{
+       this.initMap();this.map.once('load',()=>{this.mapReady=true;this.drawRoute();this.playIntro();});
+     }).catch(()=>{this.mapReady=false;this.showMapHint("地图资源加载受限，故事照读 ↓");this.cardIntro();});
+   }
  },
  cardIntro(){const h=document.getElementById('introHint');
    document.getElementById('introBig').textContent=this.persona.name+" · 出发";
@@ -753,8 +763,9 @@ const App={
        geometry:{type:'LineString',coordinates:seg},properties:{}});
      const here=this.map.getCenter();
      const d=Math.hypot(here.lng-poi.c[0],here.lat-poi.c[1]);
-     this.map.flyTo({center:[poi.c[0]-0.006,poi.c[1]-0.004],zoom:13.4,pitch:48,bearing:-6,
-       speed: d>0.03?0.7:0.0001,curve:1.5,essential:true});
+     const cam={center:[poi.c[0]-0.006,poi.c[1]-0.004],zoom:13.4,pitch:48,bearing:-6,essential:true};
+     if(d>0.03)this.map.flyTo(Object.assign(cam,{speed:0.7,curve:1.5}));
+     else this.map.easeTo(Object.assign(cam,{duration:700}));  // 相邻近站直切，固定短时长，避免极慢动画
    }
    this.markers.forEach((m,k)=>{const e=m.getElement();
      e.style.transform=(k===i)?'scale(1.35)':'scale(1)';
