@@ -386,7 +386,7 @@ const App={
    const coords=this.route.stops.map(st=>PARIS.pois[st.id].c);
    this.clearRoute();
    this.map.addSource('ghost',{type:'geojson',data:{type:'Feature',
-     geometry:{type:'LineString',coordinates},properties:{}}});
+     geometry:{type:'LineString',coordinates:coords},properties:{}}});
    this.map.addLayer({id:'route-g',type:'line',source:'ghost',
      paint:{'line-color':'#c9a45c','line-width':2,'line-opacity':.22,'line-dasharray':[2,2]}});
    this.map.addSource('route',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
